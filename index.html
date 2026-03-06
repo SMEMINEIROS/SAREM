@@ -500,7 +500,9 @@ const firebaseConfig = {
   messagingSenderId: "787644291903",
   appId: "1:787644291903:web:e227ec78b1885b7506518a"
 };
-
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 // ===== DADOS FIXOS =====
 const ESCOLAS = [
   "EM Reverendo Eudóxio",
