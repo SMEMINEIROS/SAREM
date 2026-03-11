@@ -210,7 +210,7 @@
       </div>
 
       <!-- RESULTADOS DA PESQUISA/FILTRO -->
-      <div class="tabela-card" id="card-resultados">
+      <div class="tabela-card oculto" id="card-resultados">
         <div class="tabela-header">
           <div class="tabela-titulo">📋 Resultados</div>
           <span id="resultados-count" style="font-size:12px;color:var(--text-light)"></span>
@@ -467,6 +467,7 @@
              (!per    || r.periodo === per);
     });
     atualizarDashboard(registrosFiltrados);
+    renderizarTabela(registrosFiltrados, true);
   });
 
   document.getElementById("btn-limpar-filtros").addEventListener("click", function() {
@@ -475,6 +476,7 @@
     });
     registrosFiltrados = todosRegistros.slice();
     atualizarDashboard(registrosFiltrados);
+    renderizarTabela(registrosFiltrados, false);
   });
 
   // PESQUISA GERAL
@@ -489,11 +491,13 @@
              (r.periodo||"").toLowerCase().includes(termo);
     });
     atualizarDashboard(registrosFiltrados);
+    renderizarTabela(registrosFiltrados, true);
   });
   document.getElementById("btn-limpar-pesquisa").addEventListener("click", function() {
     document.getElementById("pesquisa-geral").value = "";
     registrosFiltrados = todosRegistros.slice();
     atualizarDashboard(registrosFiltrados);
+    renderizarTabela(registrosFiltrados, false);
   });
   document.getElementById("pesquisa-geral").addEventListener("keydown", function(e) {
     if (e.key === "Enter") document.getElementById("btn-pesquisa").click();
@@ -513,7 +517,7 @@
     document.getElementById("card-media-port").textContent = mediaPort;
     document.getElementById("card-media-mat").textContent = mediaMat;
     document.getElementById("card-escolas").textContent = escolas;
-    renderizarTabela(dados);
+    renderizarTabela(dados, false);
     renderizarTop3(comNota);
     renderizarPizzas(comNota);
   }
@@ -577,11 +581,14 @@
     pizza("grafico-dist-mat",  dados.map(function(r){return r.notaMat;}));
   }
 
-  function renderizarTabela(dados) {
+  function renderizarTabela(dados, mostrar) {
+    var card = document.getElementById("card-resultados");
     var tbody = document.getElementById("tabela-corpo");
     var vazio = document.getElementById("tabela-vazia");
     var count = document.getElementById("resultados-count");
     tbody.innerHTML = "";
+    if (!mostrar) { if(card) card.classList.add("oculto"); return; }
+    if (card) card.classList.remove("oculto");
     var comNota = dados.filter(function(r){return r.notaPort!=null;});
     if (count) count.textContent = comNota.length + " aluno(s)";
     if (comNota.length === 0) { vazio.classList.remove("oculto"); return; }
