@@ -1,127 +1,117 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAREM - Sistema de Avaliação e Resultados</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAREM - Sistema de Avaliação e Resultados</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<style>
-  :root {
-    --primary: #1a5276;
-    --primary-light: #2e86c1;
-    --accent: #f39c12;
-    --success: #27ae60;
-    --danger: #e74c3c;
-    --bg: #f0f4f8;
-    --card: #ffffff;
-    --text: #2c3e50;
-    --text-light: #7f8c8d;
-    --border: #dce1e7;
-    --shadow: 0 2px 12px rgba(0,0,0,0.08);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-  .oculto { display: none !important; }
-  .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { background: var(--primary-light); }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-success { background: var(--success); color: #fff; }
-  .btn-success:hover { background: #1e8449; }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  #pagina-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); }
-  .login-card { background: var(--card); border-radius: 16px; padding: 48px 40px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); text-align: center; }
-  .login-title { font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-  .login-subtitle { color: var(--text-light); font-size: 13px; margin-bottom: 32px; }
-  .form-group { margin-bottom: 18px; text-align: left; }
-  .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
-  .form-group input, .form-group select { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; transition: border 0.2s; background: #fff; }
-  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-light); }
-  .login-card .btn { width: 100%; padding: 13px; font-size: 15px; margin-top: 4px; }
-  #login-erro { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
-  #pagina-app { min-height: 100vh; display: flex; flex-direction: column; }
-  .header { background: var(--primary); color: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 100; }
-  .header-logo { display: flex; align-items: center; gap: 10px; }
-  .header-titulo { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
-  .header-right { display: flex; align-items: center; gap: 16px; }
-  .header-user { font-size: 13px; opacity: 0.85; }
-  .btn-logout { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
-  .btn-logout:hover { background: rgba(255,255,255,0.25); }
-  .nav { background: var(--card); border-bottom: 1px solid var(--border); display: flex; gap: 4px; padding: 0 24px; overflow-x: auto; }
-  .nav-btn { padding: 14px 18px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-light); border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
-  .nav-btn:hover { color: var(--primary); }
-  .nav-btn.ativo { color: var(--primary); border-bottom-color: var(--primary); }
-  .nav-btn.admin-only { color: var(--accent); }
-  .nav-btn.admin-only.ativo { border-bottom-color: var(--accent); color: var(--accent); }
-  .conteudo { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
-  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .card-resumo { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px; }
-  .card-resumo-icon { font-size: 36px; }
-  .card-resumo-valor { font-size: 28px; font-weight: 700; color: var(--primary); line-height: 1; }
-  .card-resumo-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
-  .filtros-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 24px; }
-  .filtros-titulo { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
-  .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-  .filtros-grid select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; width: 100%; }
-  .filtros-acoes { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
-  .graficos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 24px; }
-  .grafico-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }
-  .grafico-titulo { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
-  .grafico-container { position: relative; height: 260px; }
-  .tabela-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 24px; }
-  .tabela-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-  .tabela-titulo { font-size: 14px; font-weight: 700; }
-  .tabela-wrapper { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th { background: var(--primary); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; }
-  tbody tr:nth-child(even) { background: #f8fafc; }
-  tbody tr:hover { background: #eaf2fb; }
-  tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
-  .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-  .badge-verde { background: #d5f5e3; color: #1e8449; }
-  .badge-amarelo { background: #fef9e7; color: #b7770d; }
-  .badge-vermelho { background: #fadbd8; color: #922b21; }
-  .lancamento-card { background: var(--card); border-radius: 12px; padding: 28px; box-shadow: var(--shadow); }
-  .lancamento-titulo { font-size: 18px; font-weight: 700; margin-bottom: 24px; color: var(--primary); }
-  .admin-card { background: var(--card); border-radius: 12px; padding: 28px; box-shadow: var(--shadow); max-width: 700px; }
-  .admin-titulo { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--accent); }
-  .admin-sub { font-size: 13px; color: var(--text-light); margin-bottom: 24px; }
-  .usuario-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
-  .usuario-info strong { display: block; font-size: 14px; }
-  .usuario-info small { color: var(--text-light); font-size: 12px; }
-  .comp-aviso { background: #eaf6fb; border: 1px solid #aed6f1; border-radius: 8px; padding: 16px; color: #1a5276; font-size: 13px; margin-bottom: 20px; }
-  .input-nota { width: 80px; padding: 6px 8px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 14px; font-weight: 600; transition: border 0.2s; }
-  .input-nota:focus { outline: none; border-color: var(--primary-light); }
-  .input-nota:not(:placeholder-shown) { border-color: var(--success); background: #f0faf4; }
-  @media (max-width: 600px) {
-    .conteudo { padding: 16px; }
-    .graficos-grid { grid-template-columns: 1fr; }
-    .header-titulo { font-size: 15px; }
-  }
-</style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",sans-serif;background:#f0f4f8;color:#2c3e50}
+    :root{--primary:#1a5276;--primary-light:#2e86c1;--accent:#f39c12;--success:#27ae60;--danger:#e74c3c;--bg:#f0f4f8;--card:#ffffff;--text:#2c3e50;--text-light:#7f8c8d;--border:#dce1e7;--shadow:0 2px 12px rgba(0,0,0,0.08)}
+    .oculto{display:none!important}
+    .btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s}
+    .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-light)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#1e8449}
+    .btn-sm{padding:6px 12px;font-size:12px}
+    /* LOGIN */
+    #pagina-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),var(--primary-light))}
+    .login-card{background:#fff;border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center}
+    .login-title{font-size:28px;font-weight:700;color:var(--primary);margin-bottom:4px}
+    .login-subtitle{color:var(--text-light);font-size:13px;margin-bottom:32px}
+    .form-group{margin-bottom:18px;text-align:left}
+    .form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+    .form-group input,.form-group select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;transition:border .2s;background:#fff}
+    .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--primary-light)}
+    .login-card .btn{width:100%;padding:13px;font-size:15px;margin-top:4px}
+    #login-erro{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+    /* APP */
+    #pagina-app{min-height:100vh;display:flex;flex-direction:column}
+    .header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+    .header-logo{display:flex;align-items:center;gap:10px}
+    .header-titulo{font-size:18px;font-weight:700;letter-spacing:1px}
+    .header-right{display:flex;align-items:center;gap:16px}
+    .header-user{font-size:13px;opacity:.85}
+    .btn-logout{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+    .btn-logout:hover{background:rgba(255,255,255,.25)}
+    .nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:4px;padding:0 24px;overflow-x:auto}
+    .nav-btn{padding:14px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+    .nav-btn:hover{color:var(--primary)}
+    .nav-btn.ativo{color:var(--primary);border-bottom-color:var(--primary)}
+    .nav-btn.admin-only{color:var(--accent)}.nav-btn.admin-only.ativo{border-bottom-color:var(--accent);color:var(--accent)}
+    .conteudo{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%}
+    /* CARDS */
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .card-resumo{background:var(--card);border-radius:12px;padding:20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px}
+    .card-resumo-icon{font-size:36px}
+    .card-resumo-valor{font-size:28px;font-weight:700;color:var(--primary);line-height:1}
+    .card-resumo-label{font-size:12px;color:var(--text-light);margin-top:4px}
+    /* FILTROS */
+    .filtros-card{background:var(--card);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px}
+    .filtros-titulo{font-size:14px;font-weight:700;margin-bottom:14px}
+    .filtros-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .filtros-grid select{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:100%}
+    .filtros-acoes{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
+    /* GRID GRAFICOS */
+    .graficos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:20px;margin-bottom:24px}
+    .grafico-card{background:var(--card);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+    .grafico-titulo{font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px}
+    .grafico-container{position:relative;height:260px}
+    /* TABELA */
+    .tabela-card{background:var(--card);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px}
+    .tabela-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+    .tabela-titulo{font-size:14px;font-weight:700}
+    .tabela-wrapper{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{background:var(--primary);color:#fff;padding:10px 12px;text-align:left;font-weight:600}
+    tbody tr:nth-child(even){background:#f8fafc}
+    tbody tr:hover{background:#eaf2fb}
+    tbody td{padding:9px 12px;border-bottom:1px solid var(--border)}
+    .badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600}
+    .badge-verde{background:#d5f5e3;color:#1e8449}
+    .badge-amarelo{background:#fef9e7;color:#b7770d}
+    .badge-vermelho{background:#fadbd8;color:#922b21}
+    /* LANÇAMENTO */
+    .lancamento-card{background:var(--card);border-radius:12px;padding:28px;box-shadow:var(--shadow)}
+    .lancamento-titulo{font-size:18px;font-weight:700;margin-bottom:24px;color:var(--primary)}
+    .input-nota{width:80px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-size:14px;font-weight:600;transition:border .2s}
+    .input-nota:focus{outline:none;border-color:var(--primary-light)}
+    .input-nota:not(:placeholder-shown){border-color:var(--success);background:#f0faf4}
+    /* ADMIN */
+    .admin-card{background:var(--card);border-radius:12px;padding:28px;box-shadow:var(--shadow);max-width:700px}
+    .admin-titulo{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--accent)}
+    .admin-sub{font-size:13px;color:var(--text-light);margin-bottom:24px}
+    .usuario-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+    .usuario-info strong{display:block;font-size:14px}
+    .usuario-info small{color:var(--text-light);font-size:12px}
+    /* COMPARATIVO */
+    .comp-aviso{background:#eaf6fb;border:1px solid #aed6f1;border-radius:8px;padding:16px;color:#1a5276;font-size:13px;margin-bottom:20px}
+    /* TOP3 */
+    .top3-item{display:flex;align-items:center;padding:12px 8px;border-bottom:1px solid var(--border)}
+    .top3-item:last-child{border-bottom:none}
+    .top3-medal{font-size:22px;margin-right:10px;min-width:30px}
+    .top3-nome{flex:1;font-size:13px;font-weight:600}
+    .top3-nota .badge{font-size:15px;padding:5px 14px}
+    @media(max-width:600px){.conteudo{padding:16px}.graficos-grid{grid-template-columns:1fr}.header-titulo{font-size:15px}}
+  </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="pagina-login">
   <div class="login-card">
-    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px;">
-      <img src="logo-prefeitura.png" alt="Prefeitura" style="height:80px;object-fit:contain;">
-      <img src="logo-secretaria.png" alt="SME" style="height:80px;object-fit:contain;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px">
+      <img src="logo-prefeitura.png" alt="Prefeitura" style="height:80px;object-fit:contain">
+      <img src="logo-secretaria.png" alt="SME" style="height:80px;object-fit:contain">
     </div>
     <div class="login-title">SAREM</div>
     <div class="login-subtitle">Sistema de Avaliação e Resultados<br>Secretaria Municipal de Educação — Mineiros/GO</div>
-    <div class="form-group">
-      <label>E-mail</label>
-      <input type="email" id="login-email" placeholder="seu@sarem.com">
-    </div>
-    <div class="form-group">
-      <label>Senha</label>
-      <input type="password" id="login-senha" placeholder="••••••••">
-    </div>
+    <div class="form-group"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@sarem.com"></div>
+    <div class="form-group"><label>Senha</label><input type="password" id="login-senha" placeholder=""></div>
     <button class="btn btn-primary" id="btn-login">Entrar</button>
     <div id="login-erro"></div>
   </div>
@@ -130,64 +120,47 @@
 <!-- APP -->
 <div id="pagina-app" class="oculto">
   <header class="header">
-    <div class="header-logo">
-      <span style="font-size:22px;">📊</span>
-      <span class="header-titulo">SAREM</span>
-    </div>
+    <div class="header-logo"><span style="font-size:22px">🏫</span><span class="header-titulo">SAREM</span></div>
     <div class="header-right">
       <span class="header-user" id="header-usuario"></span>
       <button class="btn btn-sm btn-logout" id="btn-logout">Sair</button>
     </div>
   </header>
-
   <nav class="nav">
-    <button class="nav-btn ativo" data-secao="dashboard">📈 Dashboard</button>
-    <button class="nav-btn" data-secao="lancamento">✏️ Lançar Notas</button>
-    <button class="nav-btn" data-secao="comparativo">🔄 Comparativo</button>
-    <button class="nav-btn admin-only oculto" id="btn-admin" data-secao="admin">⚙️ Admin</button>
+    <button class="nav-btn ativo" data-secao="dashboard">Dashboard</button>
+    <button class="nav-btn" data-secao="lancamento">Lançar Notas</button>
+    <button class="nav-btn" data-secao="comparativo">Comparativo</button>
+    <button class="nav-btn admin-only oculto" id="btn-admin" data-secao="admin">Admin</button>
   </nav>
-
   <main class="conteudo">
 
     <!-- DASHBOARD -->
     <div id="secao-dashboard">
+      <!-- CARDS RESUMO -->
       <div class="cards-grid">
-        <div class="card-resumo">
-          <div class="card-resumo-icon">👨‍🎓</div>
-          <div><div class="card-resumo-valor" id="card-total">0</div><div class="card-resumo-label">Alunos Avaliados</div></div>
-        </div>
-        <div class="card-resumo">
-          <div class="card-resumo-icon">📖</div>
-          <div><div class="card-resumo-valor" id="card-media-port">-</div><div class="card-resumo-label">Média Português</div></div>
-        </div>
-        <div class="card-resumo">
-          <div class="card-resumo-icon">🔢</div>
-          <div><div class="card-resumo-valor" id="card-media-mat">-</div><div class="card-resumo-label">Média Matemática</div></div>
-        </div>
-        <div class="card-resumo">
-          <div class="card-resumo-icon">🏫</div>
-          <div><div class="card-resumo-valor" id="card-escolas">0</div><div class="card-resumo-label">Escolas Participantes</div></div>
-        </div>
+        <div class="card-resumo"><div class="card-resumo-icon">👨‍🎓</div><div><div class="card-resumo-valor" id="card-total">0</div><div class="card-resumo-label">Alunos Avaliados</div></div></div>
+        <div class="card-resumo"><div class="card-resumo-icon">📖</div><div><div class="card-resumo-valor" id="card-media-port">-</div><div class="card-resumo-label">Média Português</div></div></div>
+        <div class="card-resumo"><div class="card-resumo-icon">🔢</div><div><div class="card-resumo-valor" id="card-media-mat">-</div><div class="card-resumo-label">Média Matemática</div></div></div>
+        <div class="card-resumo"><div class="card-resumo-icon">🏫</div><div><div class="card-resumo-valor" id="card-escolas">0</div><div class="card-resumo-label">Escolas Participantes</div></div></div>
       </div>
 
+      <!-- FILTROS -->
       <div class="filtros-card">
         <div class="filtros-titulo">🔍 Filtros</div>
         <div class="filtros-grid">
           <select id="filtro-escola"><option value="">Todas as Escolas</option></select>
           <select id="filtro-serie">
             <option value="">Todas as Séries</option>
-            <option value="1º Ano">1º Ano</option>
-            <option value="2º Ano">2º Ano</option>
-            <option value="3º Ano">3º Ano</option>
-            <option value="4º Ano">4º Ano</option>
-            <option value="5º Ano">5º Ano</option>
+            <option value="1 Ano">1 Ano</option><option value="2 Ano">2 Ano</option>
+            <option value="3 Ano">3 Ano</option><option value="4 Ano">4 Ano</option>
+            <option value="5 Ano">5 Ano</option>
           </select>
           <select id="filtro-turma"><option value="">Todas as Turmas</option></select>
           <select id="filtro-avaliadora">
             <option value="">Todas as Avaliadoras</option>
-            <option value="jane@sarem.com">Jane (4º e 5º ano)</option>
-            <option value="marcia@sarem.com">Márcia (2º ano)</option>
-            <option value="wellita@sarem.com">Wellita (3º ano)</option>
+            <option value="jane@sarem.com">Jane 4 e 5 ano</option>
+            <option value="marcia@sarem.com">Márcia 2 ano</option>
+            <option value="wellita@sarem.com">Wellita 3 ano</option>
           </select>
           <select id="filtro-periodo">
             <option value="">Ambos os Períodos</option>
@@ -197,40 +170,59 @@
         </div>
         <div class="filtros-acoes">
           <button class="btn btn-primary" id="btn-aplicar-filtros">Aplicar Filtros</button>
-          <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text);" id="btn-limpar-filtros">Limpar</button>
+          <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-limpar-filtros">Limpar</button>
         </div>
       </div>
 
-      <div class="tabela-card" style="margin-bottom:24px">
-        <div class="tabela-header">
-          <div class="tabela-titulo">📋 Médias por Turma</div>
+      <!-- PESQUISA GERAL -->
+      <div class="filtros-card">
+        <div class="filtros-titulo">🔎 Pesquisa Rápida</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="pesquisa-geral" placeholder="Buscar por aluno, escola, turma, série..."
+            style="flex:1;min-width:250px;padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">
+          <button class="btn btn-primary btn-sm" id="btn-pesquisa">Buscar</button>
+          <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-limpar-pesquisa">Limpar</button>
         </div>
-        <div class="tabela-wrapper">
-          <table>
-            <thead><tr><th>Escola</th><th>Série</th><th>Turma</th><th style="text-align:center">Português</th><th style="text-align:center">Matemática</th><th style="text-align:center">Alunos</th></tr></thead>
-            <tbody id="tabela-medias-turma"></tbody>
-          </table>
-        </div>
-        <div id="tabela-medias-vazia" style="text-align:center;padding:24px;color:var(--text-light);font-size:14px" class="oculto">Nenhum dado encontrado.</div>
       </div>
 
+      <!-- TOP 3 ESCOLAS -->
+      <div class="graficos-grid" style="margin-bottom:24px">
+        <div class="grafico-card">
+          <div class="grafico-titulo">🏆 Top 3 Escolas — Português</div>
+          <div id="top3-port"></div>
+        </div>
+        <div class="grafico-card">
+          <div class="grafico-titulo">🏆 Top 3 Escolas — Matemática</div>
+          <div id="top3-mat"></div>
+        </div>
+      </div>
+
+      <!-- GRÁFICOS DE PIZZA -->
+      <div class="graficos-grid">
+        <div class="grafico-card">
+          <div class="grafico-titulo">📊 Distribuição — Português</div>
+          <div class="grafico-container"><canvas id="grafico-dist-port"></canvas></div>
+        </div>
+        <div class="grafico-card">
+          <div class="grafico-titulo">📊 Distribuição — Matemática</div>
+          <div class="grafico-container"><canvas id="grafico-dist-mat"></canvas></div>
+        </div>
+      </div>
+
+      <!-- REGISTROS DETALHADOS -->
       <div class="tabela-card">
         <div class="tabela-header">
           <div class="tabela-titulo">📋 Registros Detalhados</div>
-          <input type="text" id="busca-aluno" placeholder="Buscar aluno..." style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:200px;">
+          <input type="text" id="busca-aluno" placeholder="Buscar aluno..."
+            style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:200px">
         </div>
         <div class="tabela-wrapper">
           <table>
-            <thead>
-              <tr>
-                <th>Aluno</th><th>Escola</th><th>Série</th><th>Turma</th>
-                <th>Avaliadora</th><th>Período</th><th>Português</th><th>Matemática</th><th>Média</th><th>Ações</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Aluno</th><th>Escola</th><th>Série</th><th>Turma</th><th>Avaliadora</th><th>Período</th><th>Português</th><th>Matemática</th><th>Média</th><th>Ações</th></tr></thead>
             <tbody id="tabela-corpo"></tbody>
           </table>
         </div>
-        <div id="tabela-vazia" style="text-align:center;padding:32px;color:var(--text-light);font-size:14px;" class="oculto">Nenhum registro encontrado.</div>
+        <div id="tabela-vazia" style="text-align:center;padding:32px;color:var(--text-light);font-size:14px" class="oculto">Nenhum registro encontrado.</div>
       </div>
     </div>
 
@@ -292,6 +284,8 @@
       </div>
     </div>
 
+    
+
     <!-- COMPARATIVO -->
     <div id="secao-comparativo" class="oculto">
       <div class="comp-aviso">ℹ️ Esta seção exibe a evolução entre o <strong>Diagnóstico Inicial</strong> e o <strong>Diagnóstico Final</strong>.</div>
@@ -318,6 +312,8 @@
       </div>
     </div>
 
+    
+
     <!-- ADMIN -->
     <div id="secao-admin" class="oculto">
       <div class="admin-card">
@@ -339,10 +335,12 @@
     </div>
 
   </main>
+
+  </main>
 </div>
 
 <script>
-var firebaseConfig = {
+  var firebaseConfig = {
   apiKey: "AIzaSyAZd5yyiJCXju1mKjAR16R5dpf15yxqQK4",
   authDomain: "sarem-f2539.firebaseapp.com",
   projectId: "sarem-f2539",
@@ -350,11 +348,11 @@ var firebaseConfig = {
   messagingSenderId: "787644291903",
   appId: "1:787644291903:web:e227ec78b1885b7506518a"
 };
-firebase.initializeApp(firebaseConfig);
-var auth = firebase.auth();
-var db = firebase.firestore();
+  firebase.initializeApp(firebaseConfig);
+  var auth = firebase.auth();
+  var db = firebase.firestore();
 
-var ESCOLAS = [
+  var ESCOLAS = [
   "EM Reverendo Eudóxio","EM Comecinho de Vida Miriam Rezende","EM Castelo Branco",
   "EM Maria Eduarda Condinho Filgueiras","EM Padre Maximino Alvarez Gutierrez","EM Dom Bosco",
   "EM Professor Salviano Neves Amorim","EM Santo Antônio","EM Professor Juarez Távora de Carvalho",
@@ -364,238 +362,259 @@ var ESCOLAS = [
   "Escola Antonio Messias","Escola Caindão","Escola Salto","Escola Morro Dois Irmãos","Escola Pinguela"
 ];
 
-var ADMIN_EMAIL = "admin@sarem.com";
-var usuarioAtual = null;
-var todosRegistros = [];
-var registrosFiltrados = [];
-var charts = {};
+  var ADMINEMAIL = "admin@sarem.com";
+  var usuarioAtual = null;
+  var todosRegistros = [];
+  var registrosFiltrados = [];
+  var charts = {};
+  var alunosTurmaAtual = [];
 
   function arred(n) {
     return (Math.round(n * 10) / 10).toFixed(1);
   }
-var alunosTurmaAtual = [];
 
-// AUTH
-auth.onAuthStateChanged(function(user) {
-  if (user) {
-    usuarioAtual = user;
-    document.getElementById("pagina-login").classList.add("oculto");
-    document.getElementById("pagina-app").classList.remove("oculto");
-    document.getElementById("header-usuario").textContent = user.email;
-    if (user.email === ADMIN_EMAIL) {
-      document.getElementById("btn-admin").classList.remove("oculto");
+  // AUTH
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      usuarioAtual = user;
+      document.getElementById("pagina-login").classList.add("oculto");
+      document.getElementById("pagina-app").classList.remove("oculto");
+      document.getElementById("header-usuario").textContent = user.email;
+      if (user.email === ADMINEMAIL) document.getElementById("btn-admin").classList.remove("oculto");
+      popularSelectsEscolas();
+      carregarRegistros();
+    } else {
+      document.getElementById("pagina-login").classList.remove("oculto");
+      document.getElementById("pagina-app").classList.add("oculto");
     }
-    popularSelectsEscolas();
-    carregarRegistros();
-  } else {
-    document.getElementById("pagina-login").classList.remove("oculto");
-    document.getElementById("pagina-app").classList.add("oculto");
+  });
+
+  // LOGIN / LOGOUT
+  document.getElementById("btn-login").addEventListener("click", function() {
+    var email = document.getElementById("login-email").value;
+    var senha = document.getElementById("login-senha").value;
+    document.getElementById("login-erro").textContent = "";
+    auth.signInWithEmailAndPassword(email, senha).catch(function() {
+      document.getElementById("login-erro").textContent = "E-mail ou senha inválidos.";
+    });
+  });
+  document.getElementById("login-senha").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") document.getElementById("btn-login").click();
+  });
+  document.getElementById("btn-logout").addEventListener("click", function() { auth.signOut(); });
+
+  // NAVEGAÇÃO
+  document.querySelectorAll(".nav-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      ["dashboard","lancamento","comparativo","admin"].forEach(function(s) {
+        document.getElementById("secao-" + s).classList.add("oculto");
+      });
+      document.querySelectorAll(".nav-btn").forEach(function(b) { b.classList.remove("ativo"); });
+      document.getElementById("secao-" + btn.getAttribute("data-secao")).classList.remove("oculto");
+      btn.classList.add("ativo");
+    });
+  });
+
+  // POPULAR SELECTS ESCOLAS
+  function popularSelectsEscolas() {
+    ["filtro-escola","l-escola","comp-escola"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var primeira = el.options[0] ? el.options[0].outerHTML : "<option value=''>Selecione...</option>";
+      el.innerHTML = primeira;
+      ESCOLAS.forEach(function(e) {
+        var opt = document.createElement("option");
+        opt.value = e; opt.textContent = e;
+        el.appendChild(opt);
+      });
+    });
   }
-});
 
-// LOGIN / LOGOUT
-document.getElementById("btn-login").addEventListener("click", function() {
-  var email = document.getElementById("login-email").value;
-  var senha = document.getElementById("login-senha").value;
-  document.getElementById("login-erro").textContent = "";
-  auth.signInWithEmailAndPassword(email, senha).catch(function() {
-    document.getElementById("login-erro").textContent = "E-mail ou senha inválidos.";
-  });
-});
-document.getElementById("login-senha").addEventListener("keydown", function(e) {
-  if (e.key === "Enter") document.getElementById("btn-login").click();
-});
-document.getElementById("btn-logout").addEventListener("click", function() {
-  auth.signOut();
-});
-
-// NAVEGAÇÃO
-document.querySelectorAll(".nav-btn").forEach(function(btn) {
-  btn.addEventListener("click", function() {
-    var secao = btn.getAttribute("data-secao");
-    ["dashboard","lancamento","comparativo","admin"].forEach(function(s) {
-      document.getElementById("secao-" + s).classList.add("oculto");
+  // FIRESTORE - CARREGAR REGISTROS
+  function carregarRegistros() {
+    db.collection("registros").orderBy("criadoEm","desc").onSnapshot(function(snap) {
+      todosRegistros = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+      registrosFiltrados = todosRegistros.slice();
+      atualizarDashboard(registrosFiltrados);
+      popularFiltroTurma(registrosFiltrados);
     });
-    document.querySelectorAll(".nav-btn").forEach(function(b) { b.classList.remove("ativo"); });
-    document.getElementById("secao-" + secao).classList.remove("oculto");
-    btn.classList.add("ativo");
-  });
-});
+  }
 
-// POPULAR SELECTS ESCOLAS
-function popularSelectsEscolas() {
-  ["filtro-escola","l-escola","comp-escola"].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    var primeira = el.options[0] ? el.options[0].outerHTML : '<option value="">Selecione...</option>';
-    el.innerHTML = primeira;
-    ESCOLAS.forEach(function(e) {
-      var opt = document.createElement("option");
-      opt.value = e; opt.textContent = e;
-      el.appendChild(opt);
+  function popularFiltroTurma(dados) {
+    var sel = document.getElementById("filtro-turma");
+    var atual = sel.value;
+    sel.innerHTML = "<option value=''>Todas as Turmas</option>";
+    var turmas = [...new Set(dados.map(function(r){return r.turma;}).filter(Boolean))].sort();
+    turmas.forEach(function(t) {
+      var o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
     });
-  });
-}
+    if (atual) sel.value = atual;
+  }
 
-// FIRESTORE - REGISTROS
-function carregarRegistros() {
-  db.collection("registros").orderBy("criadoEm", "desc").onSnapshot(function(snap) {
-    todosRegistros = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+  // FILTROS
+  document.getElementById("btn-aplicar-filtros").addEventListener("click", function() {
+    var escola = document.getElementById("filtro-escola").value;
+    var serie  = document.getElementById("filtro-serie").value;
+    var turma  = document.getElementById("filtro-turma").value;
+    var aval   = document.getElementById("filtro-avaliadora").value;
+    var per    = document.getElementById("filtro-periodo").value;
+    registrosFiltrados = todosRegistros.filter(function(r) {
+      return (!escola || r.escola === escola) &&
+             (!serie  || r.serie  === serie)  &&
+             (!turma  || r.turma  === turma)  &&
+             (!aval   || r.avaliadora === aval) &&
+             (!per    || r.periodo === per);
+    });
+    atualizarDashboard(registrosFiltrados);
+  });
+
+  document.getElementById("btn-limpar-filtros").addEventListener("click", function() {
+    ["filtro-escola","filtro-serie","filtro-turma","filtro-avaliadora","filtro-periodo"].forEach(function(id) {
+      document.getElementById(id).value = "";
+    });
     registrosFiltrados = todosRegistros.slice();
     atualizarDashboard(registrosFiltrados);
   });
-}
 
-// FILTROS
-document.getElementById("btn-aplicar-filtros").addEventListener("click", function() {
-  var escola = document.getElementById("filtro-escola").value;
-  var serie = document.getElementById("filtro-serie").value;
-  var turma = document.getElementById("filtro-turma").value;
-  var avaliadora = document.getElementById("filtro-avaliadora").value;
-  var periodo = document.getElementById("filtro-periodo").value;
-  var fEscola = escola && !escola.startsWith("Todas") && escola !== "Selecione...";
-  var fSerie  = serie  && !serie.startsWith("Todas");
-  var fTurma  = turma  && !turma.startsWith("Todas");
-  var fAval   = avaliadora && !avaliadora.startsWith("Todas");
-  var fPer    = periodo && !periodo.startsWith("Ambos");
-  registrosFiltrados = todosRegistros.filter(function(r) {
-    return (!fEscola || r.escola === escola) &&
-           (!fSerie  || r.serie  === serie)  &&
-           (!fTurma  || r.turma  === turma)  &&
-           (!fAval   || r.avaliadora === avaliadora) &&
-           (!fPer    || r.periodo === periodo);
-  });
-  atualizarDashboard(registrosFiltrados);
-});
-
-document.getElementById("btn-limpar-filtros").addEventListener("click", function() {
-  ["filtro-escola","filtro-serie","filtro-turma","filtro-avaliadora","filtro-periodo"].forEach(function(id) {
-    document.getElementById(id).value = "";
-  });
-  registrosFiltrados = todosRegistros.slice();
-  atualizarDashboard(registrosFiltrados);
-});
-
-document.getElementById("busca-aluno").addEventListener("keyup", function() {
-  var termo = this.value.toLowerCase();
-  document.querySelectorAll("#tabela-corpo tr").forEach(function(l) {
-    l.style.display = l.textContent.toLowerCase().includes(termo) ? "" : "none";
-  });
-});
-
-// DASHBOARD
-function atualizarDashboard(dados) {
-  var comNota = dados.filter(function(r) { return r.notaPort != null && r.notaMat != null; });
-  var total = comNota.length;
-  var mediaPort = total > 0 ? arred(comNota.reduce(function(s,r){ return s+r.notaPort; },0)/total) : "-";
-  var mediaMat  = total > 0 ? arred(comNota.reduce(function(s,r){ return s+r.notaMat; },0)/total) : "-";
-  var escolas = new Set(dados.map(function(r){ return r.escola; })).size;
-  document.getElementById("card-total").textContent   = total;
-  document.getElementById("card-media-port").textContent = mediaPort;
-  document.getElementById("card-media-mat").textContent  = mediaMat;
-  document.getElementById("card-escolas").textContent = escolas;
-  renderizarTabela(dados);
-  renderizarTop3(comNota);
-  renderizarPizzas(comNota);
-}
-
-function renderizarTop3(dados) {
-  var grupos = {};
-  dados.forEach(function(r) {
-    if (!grupos[r.escola]) grupos[r.escola] = {port:[], mat:[]};
-    grupos[r.escola].port.push(r.notaPort);
-    grupos[r.escola].mat.push(r.notaMat);
-  });
-  function mediaArr(arr) { return arr.length ? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; }
-  var escList = Object.keys(grupos).map(function(e) {
-    return {escola: e, mp: mediaArr(grupos[e].port), mm: mediaArr(grupos[e].mat)};
-  });
-
-  function renderTop3El(elId, campo) {
-    var sorted = escList.slice().sort(function(a,b){ return b[campo]-a[campo]; }).slice(0,3);
-    var el = document.getElementById(elId);
-    if (!el) return;
-    el.innerHTML = '';
-    sorted.forEach(function(e, i) {
-      var val = arred(e[campo]);
-      var bc = parseFloat(val)>=7?"badge-verde":parseFloat(val)>=5?"badge-amarelo":"badge-vermelho";
-      var medals = ['🥇','🥈','🥉'];
-      var row = document.createElement('div');
-      row.style = 'display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-bottom:1px solid var(--border)';
-      row.innerHTML = '<span style="font-size:18px;margin-right:8px">'+medals[i]+'</span>'
-        +'<span style="flex:1;font-size:13px;font-weight:600">'+e.escola+'</span>'
-        +'<span class="badge '+bc+'" style="font-size:15px;padding:5px 14px">'+val+'</span>';
-      el.appendChild(row);
+  // PESQUISA GERAL
+  document.getElementById("btn-pesquisa").addEventListener("click", function() {
+    var termo = document.getElementById("pesquisa-geral").value.toLowerCase().trim();
+    if (!termo) { registrosFiltrados = todosRegistros.slice(); atualizarDashboard(registrosFiltrados); return; }
+    registrosFiltrados = todosRegistros.filter(function(r) {
+      return (r.aluno||"").toLowerCase().includes(termo) ||
+             (r.escola||"").toLowerCase().includes(termo) ||
+             (r.turma||"").toLowerCase().includes(termo) ||
+             (r.serie||"").toLowerCase().includes(termo) ||
+             (r.periodo||"").toLowerCase().includes(termo);
     });
-    if (sorted.length === 0) el.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px">Sem dados</div>';
-  }
-  renderTop3El('top3-port', 'mp');
-  renderTop3El('top3-mat', 'mm');
-}
+    atualizarDashboard(registrosFiltrados);
+  });
+  document.getElementById("btn-limpar-pesquisa").addEventListener("click", function() {
+    document.getElementById("pesquisa-geral").value = "";
+    registrosFiltrados = todosRegistros.slice();
+    atualizarDashboard(registrosFiltrados);
+  });
+  document.getElementById("pesquisa-geral").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") document.getElementById("btn-pesquisa").click();
+  });
 
-function renderizarPizzas(dados) {
-  var faixas = ['0–3','3–5','5–7','7–9','9–10'];
-  var cores = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#27ae60'];
-  function contar(notas) {
-    var r = [0,0,0,0,0];
-    notas.forEach(function(n){ if(n<3)r[0]++; else if(n<5)r[1]++; else if(n<7)r[2]++; else if(n<9)r[3]++; else r[4]++; });
-    return r;
+  // BUSCA POR ALUNO NA TABELA
+  document.getElementById("busca-aluno").addEventListener("keyup", function() {
+    var termo = this.value.toLowerCase();
+    document.querySelectorAll("#tabela-corpo tr").forEach(function(l) {
+      l.style.display = l.textContent.toLowerCase().includes(termo) ? "" : "none";
+    });
+  });
+
+  // DASHBOARD
+  function atualizarDashboard(dados) {
+    var comNota = dados.filter(function(r) { return r.notaPort != null && r.notaMat != null; });
+    var total = comNota.length;
+    var mediaPort = total > 0 ? arred(comNota.reduce(function(s,r){return s+r.notaPort;},0)/total) : "-";
+    var mediaMat  = total > 0 ? arred(comNota.reduce(function(s,r){return s+r.notaMat;},0)/total) : "-";
+    var escolas = new Set(dados.map(function(r){return r.escola;})).size;
+    document.getElementById("card-total").textContent = total;
+    document.getElementById("card-media-port").textContent = mediaPort;
+    document.getElementById("card-media-mat").textContent = mediaMat;
+    document.getElementById("card-escolas").textContent = escolas;
+    renderizarTabela(dados);
+    renderizarTop3(comNota);
+    renderizarPizzas(comNota);
   }
-  function pizza(id, notasArr) {
-    var ctx = document.getElementById(id);
-    if (!ctx) return;
-    if (charts[id]) charts[id].destroy();
-    charts[id] = new Chart(ctx, {
-      type:'pie',
-      data:{ labels:faixas, datasets:[{ data:contar(notasArr), backgroundColor:cores }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
+
+  function renderizarTop3(dados) {
+    var grupos = {};
+    dados.forEach(function(r) {
+      if (!grupos[r.escola]) grupos[r.escola] = {port:[], mat:[]};
+      grupos[r.escola].port.push(r.notaPort);
+      grupos[r.escola].mat.push(r.notaMat);
+    });
+    var lista = Object.keys(grupos).map(function(e) {
+      var gp = grupos[e].port, gm = grupos[e].mat;
+      return {
+        escola: e,
+        mp: gp.reduce(function(a,b){return a+b;},0)/gp.length,
+        mm: gm.reduce(function(a,b){return a+b;},0)/gm.length
+      };
+    });
+    function renderEl(elId, campo) {
+      var sorted = lista.slice().sort(function(a,b){return b[campo]-a[campo];}).slice(0,3);
+      var el = document.getElementById(elId);
+      if (!el) return;
+      el.innerHTML = "";
+      if (!sorted.length) { el.innerHTML = "<div style='text-align:center;color:var(--text-light);padding:20px'>Sem dados</div>"; return; }
+      var medals = ["🥇","🥈","🥉"];
+      sorted.forEach(function(e, i) {
+        var val = arred(e[campo]);
+        var bc = parseFloat(val)>=7?"badge-verde":parseFloat(val)>=5?"badge-amarelo":"badge-vermelho";
+        var div = document.createElement("div");
+        div.className = "top3-item";
+        div.innerHTML = "<span class=\"top3-medal\">"+medals[i]+"</span>"
+          +"<span class=\"top3-nome\">"+e.escola+"</span>"
+          +"<span class=\"top3-nota\"><span class=\"badge "+bc+"\">"+val+"</span></span>";
+        el.appendChild(div);
+      });
+    }
+    renderEl("top3-port","mp");
+    renderEl("top3-mat","mm");
+  }
+
+  function renderizarPizzas(dados) {
+    var faixas = ["0–3","3–5","5–7","7–9","9–10"];
+    var cores = ["#e74c3c","#e67e22","#f1c40f","#2ecc71","#27ae60"];
+    function contar(arr) {
+      var r=[0,0,0,0,0];
+      arr.forEach(function(n){if(n<3)r[0]++;else if(n<5)r[1]++;else if(n<7)r[2]++;else if(n<9)r[3]++;else r[4]++;});
+      return r;
+    }
+    function pizza(id, notas) {
+      var ctx = document.getElementById(id);
+      if (!ctx) return;
+      if (charts[id]) charts[id].destroy();
+      charts[id] = new Chart(ctx, {
+        type:"pie",
+        data:{labels:faixas, datasets:[{data:contar(notas), backgroundColor:cores}]},
+        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"right"}}}
+      });
+    }
+    pizza("grafico-dist-port", dados.map(function(r){return r.notaPort;}));
+    pizza("grafico-dist-mat",  dados.map(function(r){return r.notaMat;}));
+  }
+
+  function renderizarTabela(dados) {
+    var tbody = document.getElementById("tabela-corpo");
+    var vazio = document.getElementById("tabela-vazia");
+    tbody.innerHTML = "";
+    var comNota = dados.filter(function(r){return r.notaPort!=null;});
+    if (comNota.length === 0) { vazio.classList.remove("oculto"); return; }
+    vazio.classList.add("oculto");
+    comNota.forEach(function(r) {
+      var media = parseFloat(r.media);
+      var bc = media>=7?"badge-verde":media>=5?"badge-amarelo":"badge-vermelho";
+      var excBtn = (usuarioAtual && usuarioAtual.email===ADMINEMAIL)
+        ? "<button class=\"btn btn-sm btn-danger\" data-id=\""+r.id+"\">🗑</button>" : "";
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+r.aluno+"</td><td>"+r.escola+"</td><td>"+r.serie+"</td><td>"+r.turma+"</td>"
+        +"<td style=\"font-size:12px\">"+nomeAvaliadora(r.avaliadora)+"</td>"
+        +"<td>"+(r.periodo==="inicial"?"Inicial":"Final")+"</td>"
+        +"<td>"+r.notaPort.toFixed(1)+"</td><td>"+r.notaMat.toFixed(1)+"</td>"
+        +"<td><span class=\"badge "+bc+"\">"+media.toFixed(1)+"</span></td>"
+        +"<td>"+excBtn+"</td>";
+      tbody.appendChild(tr);
+    });
+    document.querySelectorAll("#tabela-corpo .btn-danger[data-id]").forEach(function(btn) {
+      btn.addEventListener("click", function() { excluirRegistro(btn.getAttribute("data-id")); });
     });
   }
-  pizza('grafico-dist-port', dados.map(function(r){return r.notaPort;}));
-  pizza('grafico-dist-mat',  dados.map(function(r){return r.notaMat;}));
-}
 
-function renderizarTabela(dados) {
-  var tbody = document.getElementById("tabela-corpo");
-  var vazio = document.getElementById("tabela-vazia");
-  tbody.innerHTML = "";
-  var comNota = dados.filter(function(r){ return r.notaPort != null; });
-  if (comNota.length === 0) { vazio.classList.remove("oculto"); return; }
-  vazio.classList.add("oculto");
-  comNota.forEach(function(r) {
-    var media = parseFloat(r.media);
-    var bc = media >= 7 ? "badge-verde" : media >= 5 ? "badge-amarelo" : "badge-vermelho";
-    var excBtn = (usuarioAtual && usuarioAtual.email === ADMIN_EMAIL)
-      ? '<button class="btn btn-sm btn-danger" data-id="' + r.id + '">🗑</button>' : "";
-    var tr = document.createElement("tr");
-    tr.innerHTML = '<td>' + r.aluno + '</td><td>' + r.escola + '</td><td>' + r.serie + '</td><td>' + r.turma + '</td>' +
-      '<td style="font-size:12px;">' + nomeAvaliadora(r.avaliadora) + '</td>' +
-      '<td>' + (r.periodo === "inicial" ? "Inicial" : "Final") + '</td>' +
-      '<td>' + r.notaPort.toFixed(1) + '</td><td>' + r.notaMat.toFixed(1) + '</td>' +
-      '<td><span class="badge ' + bc + '">' + media.toFixed(1) + '</span></td>' +
-      '<td>' + excBtn + '</td>';
-    tbody.appendChild(tr);
-  });
-  document.querySelectorAll("#tabela-corpo .btn-danger[data-id]").forEach(function(btn) {
-    btn.addEventListener("click", function() { excluirRegistro(btn.getAttribute("data-id")); });
-  });
-}
+  function nomeAvaliadora(email) {
+    var map = {"jane@sarem.com":"Jane","marcia@sarem.com":"Márcia","wellita@sarem.com":"Wellita","admin@sarem.com":"Admin"};
+    return map[email] || email;
+  }
 
-function nomeAvaliadora(email) {
-  var map = {"jane@sarem.com":"Jane","marcia@sarem.com":"Márcia","wellita@sarem.com":"Wellita","admin@sarem.com":"Admin"};
-  return map[email] || email;
-}
-
-
-
-
-
-
-
-
-
-// LANÇAMENTO — busca na coleção ALUNOS
-document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
+  document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
 document.getElementById("l-serie").addEventListener("change", carregarTurmasLancamento);
 document.getElementById("btn-carregar-alunos").addEventListener("click", carregarAlunosTurma);
 document.getElementById("btn-salvar-turma").addEventListener("click", salvarTurma);
@@ -790,6 +809,8 @@ function limparNotasTurma() {
     if (inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter") aplicarPesquisaGeral(); });
   });
 
+  
+
   // COMPARATIVO
 document.getElementById("btn-gerar-comparativo").addEventListener("click", function() {
   var escola = document.getElementById("comp-escola").value;
@@ -815,7 +836,9 @@ document.getElementById("btn-gerar-comparativo").addEventListener("click", funct
   });
 });
 
-// ADMIN
+
+
+  // ADMIN
 document.getElementById("btn-limpar-tudo").addEventListener("click", function() {
   if (!confirm("ATENÇÃO: Isso vai apagar TODOS os registros. Confirma?")) return;
   db.collection("registros").get().then(function(snap) {
@@ -829,6 +852,8 @@ function excluirRegistro(id) {
   if (!confirm("Excluir este registro?")) return;
   db.collection("registros").doc(id).delete();
 }
+
+
 </script>
 </body>
 </html>
