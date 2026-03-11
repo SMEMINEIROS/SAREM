@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAREM - Sistema de Avaliação e Resultados</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
@@ -368,6 +369,10 @@ var usuarioAtual = null;
 var todosRegistros = [];
 var registrosFiltrados = [];
 var charts = {};
+
+  function arred(n) {
+    return (Math.round(n * 10) / 10).toFixed(1);
+  }
 var alunosTurmaAtual = [];
 
 // AUTH
@@ -482,44 +487,72 @@ document.getElementById("busca-aluno").addEventListener("keyup", function() {
 function atualizarDashboard(dados) {
   var comNota = dados.filter(function(r) { return r.notaPort != null && r.notaMat != null; });
   var total = comNota.length;
-  var mediaPort = total > 0 ? (comNota.reduce(function(s,r){ return s+r.notaPort; },0)/total).toFixed(1) : "-";
-  var mediaMat  = total > 0 ? (comNota.reduce(function(s,r){ return s+r.notaMat; },0)/total).toFixed(1) : "-";
+  var mediaPort = total > 0 ? arred(comNota.reduce(function(s,r){ return s+r.notaPort; },0)/total) : "-";
+  var mediaMat  = total > 0 ? arred(comNota.reduce(function(s,r){ return s+r.notaMat; },0)/total) : "-";
   var escolas = new Set(dados.map(function(r){ return r.escola; })).size;
   document.getElementById("card-total").textContent   = total;
   document.getElementById("card-media-port").textContent = mediaPort;
   document.getElementById("card-media-mat").textContent  = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   renderizarTabela(dados);
-  renderizarMediasTurma(comNota);
+  renderizarTop3(comNota);
+  renderizarPizzas(comNota);
 }
 
-function renderizarMediasTurma(dados) {
-  var tbody = document.getElementById("tabela-medias-turma");
-  var vazio = document.getElementById("tabela-medias-vazia");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  if (dados.length === 0) { vazio.classList.remove("oculto"); return; }
-  vazio.classList.add("oculto");
+function renderizarTop3(dados) {
   var grupos = {};
   dados.forEach(function(r) {
-    var key = r.escola + "||" + r.serie + "||" + r.turma;
-    if (!grupos[key]) grupos[key] = {escola: r.escola, serie: r.serie, turma: r.turma, port: [], mat: []};
-    grupos[key].port.push(r.notaPort);
-    grupos[key].mat.push(r.notaMat);
+    if (!grupos[r.escola]) grupos[r.escola] = {port:[], mat:[]};
+    grupos[r.escola].port.push(r.notaPort);
+    grupos[r.escola].mat.push(r.notaMat);
   });
-  Object.keys(grupos).sort().forEach(function(key) {
-    var g = grupos[key];
-    var mp = (g.port.reduce(function(a,b){return a+b;},0)/g.port.length).toFixed(1);
-    var mm = (g.mat.reduce(function(a,b){return a+b;},0)/g.mat.length).toFixed(1);
-    var bcP = parseFloat(mp)>=7?"badge-verde":parseFloat(mp)>=5?"badge-amarelo":"badge-vermelho";
-    var bcM = parseFloat(mm)>=7?"badge-verde":parseFloat(mm)>=5?"badge-amarelo":"badge-vermelho";
-    var tr = document.createElement("tr");
-    tr.innerHTML = "<td style='font-size:12px'>"+g.escola+"</td><td>"+g.serie+"</td><td style='font-weight:600'>"+g.turma+"</td>"
-      +"<td style='text-align:center'><span class='badge "+bcP+"'>"+mp+"</span></td>"
-      +"<td style='text-align:center'><span class='badge "+bcM+"'>"+mm+"</span></td>"
-      +"<td style='text-align:center;color:var(--text-light)'>"+g.port.length+"</td>";
-    tbody.appendChild(tr);
+  function mediaArr(arr) { return arr.length ? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; }
+  var escList = Object.keys(grupos).map(function(e) {
+    return {escola: e, mp: mediaArr(grupos[e].port), mm: mediaArr(grupos[e].mat)};
   });
+
+  function renderTop3El(elId, campo) {
+    var sorted = escList.slice().sort(function(a,b){ return b[campo]-a[campo]; }).slice(0,3);
+    var el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '';
+    sorted.forEach(function(e, i) {
+      var val = arred(e[campo]);
+      var bc = parseFloat(val)>=7?"badge-verde":parseFloat(val)>=5?"badge-amarelo":"badge-vermelho";
+      var medals = ['🥇','🥈','🥉'];
+      var row = document.createElement('div');
+      row.style = 'display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-bottom:1px solid var(--border)';
+      row.innerHTML = '<span style="font-size:18px;margin-right:8px">'+medals[i]+'</span>'
+        +'<span style="flex:1;font-size:13px;font-weight:600">'+e.escola+'</span>'
+        +'<span class="badge '+bc+'" style="font-size:15px;padding:5px 14px">'+val+'</span>';
+      el.appendChild(row);
+    });
+    if (sorted.length === 0) el.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px">Sem dados</div>';
+  }
+  renderTop3El('top3-port', 'mp');
+  renderTop3El('top3-mat', 'mm');
+}
+
+function renderizarPizzas(dados) {
+  var faixas = ['0–3','3–5','5–7','7–9','9–10'];
+  var cores = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#27ae60'];
+  function contar(notas) {
+    var r = [0,0,0,0,0];
+    notas.forEach(function(n){ if(n<3)r[0]++; else if(n<5)r[1]++; else if(n<7)r[2]++; else if(n<9)r[3]++; else r[4]++; });
+    return r;
+  }
+  function pizza(id, notasArr) {
+    var ctx = document.getElementById(id);
+    if (!ctx) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
+      type:'pie',
+      data:{ labels:faixas, datasets:[{ data:contar(notasArr), backgroundColor:cores }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
+    });
+  }
+  pizza('grafico-dist-port', dados.map(function(r){return r.notaPort;}));
+  pizza('grafico-dist-mat',  dados.map(function(r){return r.notaMat;}));
 }
 
 function renderizarTabela(dados) {
@@ -619,9 +652,15 @@ function carregarAlunosTurma() {
       vazio.classList.remove("oculto");
       return;
     }
-    db.collection("registros").where("escola","==",escola).where("serie","==",serie).where("turma","==",turma).where("periodo","==",periodo).get().then(function(regSnap) {
+    db.collection("registros").where("escola","==",escola).where("periodo","==",periodo).get().then(function(regSnap) {
+      var nomesDaTurma = new Set(alunosSnap.docs.map(function(d){ return d.data().nome; }));
       var regPorNome = {};
-      regSnap.docs.forEach(function(d) { var r = d.data(); regPorNome[r.aluno] = Object.assign({id: d.id}, r); });
+      regSnap.docs.forEach(function(d) {
+        var r = d.data();
+        if (nomesDaTurma.has(r.aluno) && !regPorNome[r.aluno]) {
+          regPorNome[r.aluno] = Object.assign({id: d.id}, r);
+        }
+      });
 
       alunosTurmaAtual = alunosSnap.docs.map(function(d) {
         var a = d.data();
@@ -671,7 +710,7 @@ function atualizarMedia(i) {
   var m = parseFloat(document.getElementById("mat-"+i).value);
   var cell = document.getElementById("media-"+i);
   if (!isNaN(p) && !isNaN(m)) {
-    var med = (p+m)/2;
+    var med = Math.round((p+m)/2 * 10) / 10;
     var bc = med>=7?"badge-verde":med>=5?"badge-amarelo":"badge-vermelho";
     cell.innerHTML = '<span class="badge ' + bc + '">' + med.toFixed(1) + '</span>';
   } else {
@@ -697,7 +736,7 @@ function salvarTurma() {
     var dados = { aluno: aluno.nome, escola: escola, serie: serie, turma: turma, periodo: periodo, avaliadora: usuarioAtual.email, criadoEm: firebase.firestore.FieldValue.serverTimestamp() };
     if (!isNaN(p)) dados.notaPort = p;
     if (!isNaN(m)) dados.notaMat = m;
-    if (!isNaN(p) && !isNaN(m)) dados.media = ((p+m)/2).toFixed(2);
+    if (!isNaN(p) && !isNaN(m)) dados.media = (Math.round((p+m)/2 * 100) / 100).toFixed(1);
     var prom;
     if (aluno.registroId) {
       prom = db.collection("registros").doc(aluno.registroId).update(dados).then(function(){ salvos++; }).catch(function(){ erros++; });
@@ -728,7 +767,30 @@ function limparNotasTurma() {
   });
 }
 
-// COMPARATIVO
+
+  function aplicarPesquisaGeral() {
+    var termo = document.getElementById("pesquisa-geral").value.toLowerCase().trim();
+    if (!termo) { registrosFiltrados = todosRegistros.slice(); atualizarDashboard(registrosFiltrados); return; }
+    registrosFiltrados = todosRegistros.filter(function(r) {
+      return (r.aluno||"").toLowerCase().includes(termo) ||
+             (r.escola||"").toLowerCase().includes(termo) ||
+             (r.turma||"").toLowerCase().includes(termo) ||
+             (r.serie||"").toLowerCase().includes(termo) ||
+             (r.periodo||"").toLowerCase().includes(termo);
+    });
+    atualizarDashboard(registrosFiltrados);
+  }
+  function limparPesquisaGeral() {
+    document.getElementById("pesquisa-geral").value = "";
+    registrosFiltrados = todosRegistros.slice();
+    atualizarDashboard(registrosFiltrados);
+  }
+  document.addEventListener("DOMContentLoaded", function() {
+    var inp = document.getElementById("pesquisa-geral");
+    if (inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter") aplicarPesquisaGeral(); });
+  });
+
+  // COMPARATIVO
 document.getElementById("btn-gerar-comparativo").addEventListener("click", function() {
   var escola = document.getElementById("comp-escola").value;
   var serie  = document.getElementById("comp-serie").value;
