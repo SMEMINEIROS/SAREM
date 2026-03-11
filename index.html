@@ -443,12 +443,17 @@ document.getElementById("btn-aplicar-filtros").addEventListener("click", functio
   var turma = document.getElementById("filtro-turma").value;
   var avaliadora = document.getElementById("filtro-avaliadora").value;
   var periodo = document.getElementById("filtro-periodo").value;
+  var fEscola = escola && !escola.startsWith('Todas') && escola !== 'Selecione...';
+  var fSerie  = serie  && !serie.startsWith('Todas');
+  var fTurma  = turma  && !turma.startsWith('Todas');
+  var fAval   = avaliadora && !avaliadora.startsWith('Todas');
+  var fPer    = periodo && !periodo.startsWith('Ambos');
   registrosFiltrados = todosRegistros.filter(function(r) {
-    return (!escola || r.escola === escola) &&
-           (!serie || r.serie === serie) &&
-           (!turma || r.turma === turma) &&
-           (!avaliadora || r.avaliadora === avaliadora) &&
-           (!periodo || r.periodo === periodo);
+    return (!fEscola || r.escola === escola) &&
+           (!fSerie  || r.serie  === serie)  &&
+           (!fTurma  || r.turma  === turma)  &&
+           (!fAval   || r.avaliadora === avaliadora) &&
+           (!fPer    || r.periodo === periodo);
   });
   atualizarDashboard(registrosFiltrados);
 });
@@ -624,9 +629,14 @@ function carregarAlunosTurma() {
       vazio.classList.remove("oculto");
       return;
     }
-    db.collection("registros").where("escola","==",escola).where("serie","==",serie).where("turma","==",turma).where("periodo","==",periodo).get().then(function(regSnap) {
+    db.collection("registros").where("escola","==",escola).where("periodo","==",periodo).get().then(function(regSnap) {
       var regPorNome = {};
-      regSnap.docs.forEach(function(d) { var r = d.data(); regPorNome[r.aluno] = Object.assign({id: d.id}, r); });
+      regSnap.docs.forEach(function(d) {
+        var r = d.data();
+        if (r.turma === turma || r.serie === serie) {
+          if (!regPorNome[r.aluno]) regPorNome[r.aluno] = Object.assign({id: d.id}, r);
+        }
+      });
 
       alunosTurmaAtual = alunosSnap.docs.map(function(d) {
         var a = d.data();
