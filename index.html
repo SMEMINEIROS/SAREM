@@ -7,7 +7,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root {
     --primary: #1a5276;
@@ -201,11 +200,17 @@
         </div>
       </div>
 
-      <div class="graficos-grid">
-        <div class="grafico-card"><div class="grafico-titulo">📊 Média por Escola</div><div class="grafico-container"><canvas id="grafico-escolas"></canvas></div></div>
-        <div class="grafico-card"><div class="grafico-titulo">📊 Média por Série</div><div class="grafico-container"><canvas id="grafico-series"></canvas></div></div>
-        <div class="grafico-card"><div class="grafico-titulo">📉 Distribuição — Português</div><div class="grafico-container"><canvas id="grafico-dist-port"></canvas></div></div>
-        <div class="grafico-card"><div class="grafico-titulo">📉 Distribuição — Matemática</div><div class="grafico-container"><canvas id="grafico-dist-mat"></canvas></div></div>
+      <div class="tabela-card" style="margin-bottom:24px">
+        <div class="tabela-header">
+          <div class="tabela-titulo">📋 Médias por Turma</div>
+        </div>
+        <div class="tabela-wrapper">
+          <table>
+            <thead><tr><th>Escola</th><th>Série</th><th>Turma</th><th style="text-align:center">Português</th><th style="text-align:center">Matemática</th><th style="text-align:center">Alunos</th></tr></thead>
+            <tbody id="tabela-medias-turma"></tbody>
+          </table>
+        </div>
+        <div id="tabela-medias-vazia" style="text-align:center;padding:24px;color:var(--text-light);font-size:14px" class="oculto">Nenhum dado encontrado.</div>
       </div>
 
       <div class="tabela-card">
@@ -443,11 +448,11 @@ document.getElementById("btn-aplicar-filtros").addEventListener("click", functio
   var turma = document.getElementById("filtro-turma").value;
   var avaliadora = document.getElementById("filtro-avaliadora").value;
   var periodo = document.getElementById("filtro-periodo").value;
-  var fEscola = escola && !escola.startsWith('Todas') && escola !== 'Selecione...';
-  var fSerie  = serie  && !serie.startsWith('Todas');
-  var fTurma  = turma  && !turma.startsWith('Todas');
-  var fAval   = avaliadora && !avaliadora.startsWith('Todas');
-  var fPer    = periodo && !periodo.startsWith('Ambos');
+  var fEscola = escola && !escola.startsWith("Todas") && escola !== "Selecione...";
+  var fSerie  = serie  && !serie.startsWith("Todas");
+  var fTurma  = turma  && !turma.startsWith("Todas");
+  var fAval   = avaliadora && !avaliadora.startsWith("Todas");
+  var fPer    = periodo && !periodo.startsWith("Ambos");
   registrosFiltrados = todosRegistros.filter(function(r) {
     return (!fEscola || r.escola === escola) &&
            (!fSerie  || r.serie  === serie)  &&
@@ -478,16 +483,43 @@ function atualizarDashboard(dados) {
   var comNota = dados.filter(function(r) { return r.notaPort != null && r.notaMat != null; });
   var total = comNota.length;
   var mediaPort = total > 0 ? (comNota.reduce(function(s,r){ return s+r.notaPort; },0)/total).toFixed(1) : "-";
-  var mediaMat  = total > 0 ? (comNota.reduce(function(s,r){ return s+r.notaMat;  },0)/total).toFixed(1) : "-";
+  var mediaMat  = total > 0 ? (comNota.reduce(function(s,r){ return s+r.notaMat; },0)/total).toFixed(1) : "-";
   var escolas = new Set(dados.map(function(r){ return r.escola; })).size;
-  document.getElementById("card-total").textContent = total;
+  document.getElementById("card-total").textContent   = total;
   document.getElementById("card-media-port").textContent = mediaPort;
-  document.getElementById("card-media-mat").textContent = mediaMat;
+  document.getElementById("card-media-mat").textContent  = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   renderizarTabela(dados);
-  renderizarGraficoEscolas(comNota);
-  renderizarGraficoSeries(comNota);
-  renderizarDistribuicao(comNota);
+  renderizarMediasTurma(comNota);
+}
+
+function renderizarMediasTurma(dados) {
+  var tbody = document.getElementById("tabela-medias-turma");
+  var vazio = document.getElementById("tabela-medias-vazia");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (dados.length === 0) { vazio.classList.remove("oculto"); return; }
+  vazio.classList.add("oculto");
+  var grupos = {};
+  dados.forEach(function(r) {
+    var key = r.escola + "||" + r.serie + "||" + r.turma;
+    if (!grupos[key]) grupos[key] = {escola: r.escola, serie: r.serie, turma: r.turma, port: [], mat: []};
+    grupos[key].port.push(r.notaPort);
+    grupos[key].mat.push(r.notaMat);
+  });
+  Object.keys(grupos).sort().forEach(function(key) {
+    var g = grupos[key];
+    var mp = (g.port.reduce(function(a,b){return a+b;},0)/g.port.length).toFixed(1);
+    var mm = (g.mat.reduce(function(a,b){return a+b;},0)/g.mat.length).toFixed(1);
+    var bcP = parseFloat(mp)>=7?"badge-verde":parseFloat(mp)>=5?"badge-amarelo":"badge-vermelho";
+    var bcM = parseFloat(mm)>=7?"badge-verde":parseFloat(mm)>=5?"badge-amarelo":"badge-vermelho";
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td style='font-size:12px'>"+g.escola+"</td><td>"+g.serie+"</td><td style='font-weight:600'>"+g.turma+"</td>"
+      +"<td style='text-align:center'><span class='badge "+bcP+"'>"+mp+"</span></td>"
+      +"<td style='text-align:center'><span class='badge "+bcM+"'>"+mm+"</span></td>"
+      +"<td style='text-align:center;color:var(--text-light)'>"+g.port.length+"</td>";
+    tbody.appendChild(tr);
+  });
 }
 
 function renderizarTabela(dados) {
@@ -521,55 +553,13 @@ function nomeAvaliadora(email) {
   return map[email] || email;
 }
 
-function renderizarGraficoEscolas(dados) {
-  var m = {};
-  dados.forEach(function(r) {
-    if (!m[r.escola]) m[r.escola] = {port:[],mat:[]};
-    m[r.escola].port.push(r.notaPort); m[r.escola].mat.push(r.notaMat);
-  });
-  var labels = Object.keys(m).map(function(e){ return e.substring(0,20); });
-  var mp = Object.values(m).map(function(v){ return (v.port.reduce(function(a,b){return a+b;},0)/v.port.length).toFixed(1); });
-  var mm = Object.values(m).map(function(v){ return (v.mat.reduce(function(a,b){return a+b;},0)/v.mat.length).toFixed(1); });
-  renderChart("grafico-escolas","bar",labels,[
-    {label:"Português",data:mp,backgroundColor:"#2e86c1bb"},
-    {label:"Matemática",data:mm,backgroundColor:"#f39c12bb"}
-  ]);
-}
 
-function renderizarGraficoSeries(dados) {
-  var series = ["1º Ano","2º Ano","3º Ano","4º Ano","5º Ano"];
-  var mp = series.map(function(s){ var it=dados.filter(function(r){return r.serie===s;}); return it.length?(it.reduce(function(a,r){return a+r.notaPort;},0)/it.length).toFixed(1):0; });
-  var mm = series.map(function(s){ var it=dados.filter(function(r){return r.serie===s;}); return it.length?(it.reduce(function(a,r){return a+r.notaMat;},0)/it.length).toFixed(1):0; });
-  renderChart("grafico-series","bar",series,[
-    {label:"Português",data:mp,backgroundColor:"#27ae60bb"},
-    {label:"Matemática",data:mm,backgroundColor:"#e74c3cbb"}
-  ]);
-}
 
-function renderizarDistribuicao(dados) {
-  var faixas = ["0–3","3–5","5–7","7–9","9–10"];
-  function contar(notas) {
-    var r=[0,0,0,0,0];
-    notas.forEach(function(n){ if(n<3)r[0]++;else if(n<5)r[1]++;else if(n<7)r[2]++;else if(n<9)r[3]++;else r[4]++; });
-    return r;
-  }
-  var cores = ["#e74c3c","#e67e22","#f1c40f","#2ecc71","#27ae60"];
-  renderChart("grafico-dist-port","pie",faixas,[{data:contar(dados.map(function(r){return r.notaPort;})),backgroundColor:cores}]);
-  renderChart("grafico-dist-mat","pie",faixas,[{data:contar(dados.map(function(r){return r.notaMat;})),backgroundColor:cores}]);
-}
 
-function renderChart(id, tipo, labels, datasets) {
-  if (charts[id]) charts[id].destroy();
-  var ctx = document.getElementById(id).getContext("2d");
-  charts[id] = new Chart(ctx, {
-    type: tipo, data: {labels: labels, datasets: datasets},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {legend: {position: tipo === "pie" ? "right" : "top"}},
-      scales: tipo !== "pie" ? {y: {beginAtZero: true, max: 10}} : {}
-    }
-  });
-}
+
+
+
+
 
 // LANÇAMENTO — busca na coleção ALUNOS
 document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
@@ -629,14 +619,9 @@ function carregarAlunosTurma() {
       vazio.classList.remove("oculto");
       return;
     }
-    db.collection("registros").where("escola","==",escola).where("periodo","==",periodo).get().then(function(regSnap) {
+    db.collection("registros").where("escola","==",escola).where("serie","==",serie).where("turma","==",turma).where("periodo","==",periodo).get().then(function(regSnap) {
       var regPorNome = {};
-      regSnap.docs.forEach(function(d) {
-        var r = d.data();
-        if (r.turma === turma || r.serie === serie) {
-          if (!regPorNome[r.aluno]) regPorNome[r.aluno] = Object.assign({id: d.id}, r);
-        }
-      });
+      regSnap.docs.forEach(function(d) { var r = d.data(); regPorNome[r.aluno] = Object.assign({id: d.id}, r); });
 
       alunosTurmaAtual = alunosSnap.docs.map(function(d) {
         var a = d.data();
