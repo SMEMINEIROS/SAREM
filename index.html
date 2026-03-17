@@ -101,7 +101,6 @@
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="pagina-login">
   <div class="login-card">
     <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px">
@@ -117,7 +116,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="pagina-app" class="oculto">
   <header class="header">
     <div class="header-logo"><span style="font-size:22px">🏫</span><span class="header-titulo">SAREM</span></div>
@@ -134,9 +132,7 @@
   </nav>
   <main class="conteudo">
 
-    <!-- DASHBOARD -->
     <div id="secao-dashboard">
-      <!-- CARDS RESUMO -->
       <div class="cards-grid">
         <div class="card-resumo"><div class="card-resumo-icon">👨‍🎓</div><div><div class="card-resumo-valor" id="card-total">0</div><div class="card-resumo-label">Alunos Avaliados</div></div></div>
         <div class="card-resumo"><div class="card-resumo-icon">📖</div><div><div class="card-resumo-valor" id="card-media-port">-</div><div class="card-resumo-label">Média Português</div></div></div>
@@ -144,16 +140,17 @@
         <div class="card-resumo"><div class="card-resumo-icon">🏫</div><div><div class="card-resumo-valor" id="card-escolas">0</div><div class="card-resumo-label">Escolas Participantes</div></div></div>
       </div>
 
-      <!-- FILTROS -->
       <div class="filtros-card">
         <div class="filtros-titulo">🔍 Filtros</div>
         <div class="filtros-grid">
           <select id="filtro-escola"><option value="">Todas as Escolas</option></select>
           <select id="filtro-serie">
             <option value="">Todas as Séries</option>
-            <option value="1 Ano">1 Ano</option><option value="2 Ano">2 Ano</option>
-            <option value="3 Ano">3 Ano</option><option value="4 Ano">4 Ano</option>
-            <option value="5 Ano">5 Ano</option>
+            <option value="1º Ano">1º Ano</option>
+            <option value="2º Ano">2º Ano</option>
+            <option value="3º Ano">3º Ano</option>
+            <option value="4º Ano">4º Ano</option>
+            <option value="5º Ano">5º Ano</option>
           </select>
           <select id="filtro-turma"><option value="">Todas as Turmas</option></select>
           <select id="filtro-avaliadora">
@@ -174,7 +171,6 @@
         </div>
       </div>
 
-      <!-- PESQUISA GERAL -->
       <div class="filtros-card">
         <div class="filtros-titulo">🔎 Pesquisa Rápida</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -185,7 +181,6 @@
         </div>
       </div>
 
-      <!-- TOP 3 ESCOLAS -->
       <div class="graficos-grid" style="margin-bottom:24px">
         <div class="grafico-card">
           <div class="grafico-titulo">🏆 Top 3 Escolas — Português</div>
@@ -197,7 +192,6 @@
         </div>
       </div>
 
-      <!-- GRÁFICOS DE PIZZA -->
       <div class="graficos-grid">
         <div class="grafico-card">
           <div class="grafico-titulo">📊 Distribuição — Português</div>
@@ -209,7 +203,6 @@
         </div>
       </div>
 
-      <!-- RESULTADOS DA PESQUISA/FILTRO -->
       <div class="tabela-card oculto" id="card-resultados">
         <div class="tabela-header">
           <div class="tabela-titulo">📋 Resultados</div>
@@ -225,7 +218,6 @@
       </div>
     </div>
 
-    <!-- LANÇAMENTO -->
     <div id="secao-lancamento" class="oculto">
       <div class="lancamento-card" style="max-width:960px;">
         <div class="lancamento-titulo">✏️ Lançar Notas por Turma</div>
@@ -285,7 +277,6 @@
 
     
 
-    <!-- COMPARATIVO -->
     <div id="secao-comparativo" class="oculto">
       <div class="comp-aviso">ℹ️ Esta seção exibe a evolução entre o <strong>Diagnóstico Inicial</strong> e o <strong>Diagnóstico Final</strong>.</div>
       <div class="filtros-card">
@@ -313,7 +304,6 @@
 
     
 
-    <!-- ADMIN -->
     <div id="secao-admin" class="oculto">
       <div class="admin-card">
         <div class="admin-titulo">⚙️ Painel Administrativo</div>
@@ -334,8 +324,6 @@
     </div>
 
   </main>
-
-  </main>
 </div>
 
 <script>
@@ -351,15 +339,33 @@
   var auth = firebase.auth();
   var db = firebase.firestore();
 
+  // ATUALIZAÇÃO IMPORTANTE: NOMES IDÊNTICOS AO BANCO DE DADOS
   var ESCOLAS = [
-  "EM Reverendo Eudóxio","EM Comecinho de Vida Miriam Rezende","EM Castelo Branco",
-  "EM Maria Eduarda Condinho Filgueiras","EM Padre Maximino Alvarez Gutierrez","EM Dom Bosco",
-  "EM Professor Salviano Neves Amorim","EM Santo Antônio","EM Professor Juarez Távora de Carvalho",
-  "EM Tonico Corredeira","EM Elias Carrijo de Souza","EM Otalécio Alves Irineu",
-  "EM Maria Aparecida de Almeida Paniago","Escola Américo Caetano","Escola Farroupilha",
-  "Escola Farroupilha Extensão","Escola Antonio Alves","Escola Gustavo Alves",
-  "Escola Antonio Messias","Escola Caindão","Escola Salto","Escola Morro Dois Irmãos","Escola Pinguela"
-];
+    "EM Comecinho de Vida",
+    "EM Dom Bosco",
+    "EM Elias Carrijo de Sousa",
+    "EM Maria Aparecida de Almeida Paniago",
+    "EM Maria Eduarda Condinho Filgueiras",
+    "EM Otalécio Alves Irineu",
+    "EM Padre Maximinio",
+    "EM Professor Juarez Távora de Carvalho",
+    "EM Professor Salviano Neves Amorim",
+    "EM Santo Antônio",
+    "EM Tonico Corredeira",
+    // Escolas Extras do Município:
+    "EM Reverendo Eudóxio",
+    "EM Castelo Branco",
+    "Escola Américo Caetano",
+    "Escola Farroupilha",
+    "Escola Farroupilha Extensão",
+    "Escola Antonio Alves",
+    "Escola Gustavo Alves",
+    "Escola Antonio Messias",
+    "Escola Caindão",
+    "Escola Salto",
+    "Escola Morro Dois Irmãos",
+    "Escola Pinguela"
+  ];
 
   var ADMINEMAIL = "admin@sarem.com";
   var usuarioAtual = null;
@@ -370,6 +376,18 @@
 
   function arred(n) {
     return (Math.round(n * 10) / 10).toFixed(1);
+  }
+
+  // FUNÇÃO NOVA PARA DESENHAR OS GRÁFICOS DE COMPARATIVO
+  function renderChart(id, type, labels, datasets) {
+    var ctx = document.getElementById(id);
+    if (!ctx) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
+      type: type,
+      data: { labels: labels, datasets: datasets },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
   }
 
   // AUTH
@@ -421,7 +439,7 @@
       if (!el) return;
       var primeira = el.options[0] ? el.options[0].outerHTML : "<option value=''>Selecione...</option>";
       el.innerHTML = primeira;
-      ESCOLAS.forEach(function(e) {
+      ESCOLAS.sort().forEach(function(e) {
         var opt = document.createElement("option");
         opt.value = e; opt.textContent = e;
         el.appendChild(opt);
@@ -502,9 +520,6 @@
   document.getElementById("pesquisa-geral").addEventListener("keydown", function(e) {
     if (e.key === "Enter") document.getElementById("btn-pesquisa").click();
   });
-
-  // BUSCA POR ALUNO NA TABELA
-
 
   // DASHBOARD
   function atualizarDashboard(dados) {
@@ -608,250 +623,213 @@
     });
   }
 
-  function nomeAvaliadora(email) {
-    var map = {"jane@sarem.com":"Jane","marcia@sarem.com":"Márcia","wellita@sarem.com":"Wellita","admin@sarem.com":"Admin"};
-    return map[email] || email;
-  }
-
+  // LANÇAMENTOS
   document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
-document.getElementById("l-serie").addEventListener("change", carregarTurmasLancamento);
-document.getElementById("btn-carregar-alunos").addEventListener("click", carregarAlunosTurma);
-document.getElementById("btn-salvar-turma").addEventListener("click", salvarTurma);
-document.getElementById("btn-limpar-notas").addEventListener("click", limparNotasTurma);
+  document.getElementById("l-serie").addEventListener("change", carregarTurmasLancamento);
+  document.getElementById("btn-carregar-alunos").addEventListener("click", carregarAlunosTurma);
+  document.getElementById("btn-salvar-turma").addEventListener("click", salvarTurma);
+  document.getElementById("btn-limpar-notas").addEventListener("click", limparNotasTurma);
 
-function carregarSeriesLancamento() {
-  var escola = document.getElementById("l-escola").value;
-  var selSerie = document.getElementById("l-serie");
-  var selTurma = document.getElementById("l-turma");
-  selSerie.innerHTML = '<option value="">Selecione a série...</option>';
-  selTurma.innerHTML = '<option value="">Selecione a turma...</option>';
-  if (!escola) return;
-  db.collection("alunos").where("escola","==",escola).where("ativo","==",true).get().then(function(snap) {
-    var series = [];
-    snap.docs.forEach(function(d) { var s = d.data().serie; if (!series.includes(s)) series.push(s); });
-    series.sort().forEach(function(s) {
-      var opt = document.createElement("option");
-      opt.value = s; opt.textContent = s;
-      selSerie.appendChild(opt);
-    });
-  });
-}
-
-function carregarTurmasLancamento() {
-  var escola = document.getElementById("l-escola").value;
-  var serie = document.getElementById("l-serie").value;
-  var selTurma = document.getElementById("l-turma");
-  selTurma.innerHTML = '<option value="">Selecione a turma...</option>';
-  if (!escola || !serie) return;
-  db.collection("alunos").where("escola","==",escola).where("serie","==",serie).where("ativo","==",true).get().then(function(snap) {
-    var turmas = [];
-    snap.docs.forEach(function(d) { var t = d.data().turma; if (!turmas.includes(t)) turmas.push(t); });
-    turmas.sort().forEach(function(t) {
-      var opt = document.createElement("option");
-      opt.value = t; opt.textContent = t;
-      selTurma.appendChild(opt);
-    });
-  });
-}
-
-function carregarAlunosTurma() {
-  var escola = document.getElementById("l-escola").value;
-  var serie = document.getElementById("l-serie").value;
-  var turma = document.getElementById("l-turma").value;
-  var periodo = document.getElementById("l-periodo").value;
-  var wrapper = document.getElementById("lancamento-tabela-wrapper");
-  var vazio = document.getElementById("lancamento-vazio");
-  if (!escola || !serie || !turma) { alert("Selecione escola, série e turma."); return; }
-
-  db.collection("alunos").where("escola","==",escola).where("serie","==",serie).where("turma","==",turma).where("ativo","==",true).get().then(function(alunosSnap) {
-    if (alunosSnap.empty) {
-      vazio.textContent = "Nenhum aluno encontrado para essa turma.";
-      wrapper.classList.add("oculto");
-      vazio.classList.remove("oculto");
-      return;
-    }
-    db.collection("registros").where("escola","==",escola).where("periodo","==",periodo).get().then(function(regSnap) {
-      var nomesDaTurma = new Set(alunosSnap.docs.map(function(d){ return d.data().nome; }));
-      var regPorNome = {};
-      regSnap.docs.forEach(function(d) {
-        var r = d.data();
-        if (nomesDaTurma.has(r.aluno) && !regPorNome[r.aluno]) {
-          regPorNome[r.aluno] = Object.assign({id: d.id}, r);
-        }
+  function carregarSeriesLancamento() {
+    var escola = document.getElementById("l-escola").value;
+    var selSerie = document.getElementById("l-serie");
+    var selTurma = document.getElementById("l-turma");
+    selSerie.innerHTML = '<option value="">Selecione a série...</option>';
+    selTurma.innerHTML = '<option value="">Selecione a turma...</option>';
+    if (!escola) return;
+    db.collection("alunos").where("escola","==",escola).where("ativo","==",true).get().then(function(snap) {
+      var series = [];
+      snap.docs.forEach(function(d) { var s = d.data().serie; if (!series.includes(s)) series.push(s); });
+      series.sort().forEach(function(s) {
+        var opt = document.createElement("option");
+        opt.value = s; opt.textContent = s;
+        selSerie.appendChild(opt);
       });
-
-      alunosTurmaAtual = alunosSnap.docs.map(function(d) {
-        var a = d.data();
-        var reg = regPorNome[a.nome] || null;
-        return {
-          alunoId: d.id,
-          nome: a.nome,
-          registroId: reg ? reg.id : null,
-          notaPort: reg ? reg.notaPort : null,
-          notaMat: reg ? reg.notaMat : null,
-          media: reg ? reg.media : null
-        };
-      }).sort(function(a,b){ return a.nome.localeCompare(b.nome); });
-
-      var periodLabel = periodo === "inicial" ? "Diagnóstico Inicial" : "Diagnóstico Final";
-      document.getElementById("lancamento-turma-titulo").textContent = escola + " — " + serie + " / " + turma + " — " + periodLabel;
-      document.getElementById("lancamento-contador").textContent = alunosTurmaAtual.length + " alunos";
-
-      var tbody = document.getElementById("lancamento-tabela-corpo");
-      tbody.innerHTML = "";
-      alunosTurmaAtual.forEach(function(aluno, i) {
-        var pv = aluno.notaPort != null ? aluno.notaPort : "";
-        var mv = aluno.notaMat  != null ? aluno.notaMat  : "";
-        var media = aluno.media != null ? parseFloat(aluno.media) : null;
-        var bc = media != null ? (media>=7?"badge-verde":media>=5?"badge-amarelo":"badge-vermelho") : "";
-        var ms = media != null ? '<span class="badge ' + bc + '">' + media.toFixed(1) + '</span>' : '<span style="color:#ccc;">—</span>';
-        var tr = document.createElement("tr");
-        tr.innerHTML = '<td style="color:var(--text-light);font-size:12px;">' + (i+1) + '</td>' +
-          '<td style="font-weight:500;">' + aluno.nome + '</td>' +
-          '<td style="text-align:center;"><input type="number" id="port-' + i + '" value="' + pv + '" min="0" max="10" step="0.1" class="input-nota" placeholder="—"></td>' +
-          '<td style="text-align:center;"><input type="number" id="mat-' + i + '" value="' + mv + '" min="0" max="10" step="0.1" class="input-nota" placeholder="—"></td>' +
-          '<td style="text-align:center;" id="media-' + i + '">' + ms + '</td>';
-        tbody.appendChild(tr);
-        document.getElementById("port-" + i).addEventListener("input", function(){ atualizarMedia(i); });
-        document.getElementById("mat-"  + i).addEventListener("input", function(){ atualizarMedia(i); });
-      });
-
-      wrapper.classList.remove("oculto");
-      vazio.classList.add("oculto");
-      document.getElementById("lancamento-turma-msg").textContent = "";
     });
-  });
-}
-
-function atualizarMedia(i) {
-  var p = parseFloat(document.getElementById("port-"+i).value);
-  var m = parseFloat(document.getElementById("mat-"+i).value);
-  var cell = document.getElementById("media-"+i);
-  if (!isNaN(p) && !isNaN(m)) {
-    var med = Math.round((p+m)/2 * 10) / 10;
-    var bc = med>=7?"badge-verde":med>=5?"badge-amarelo":"badge-vermelho";
-    cell.innerHTML = '<span class="badge ' + bc + '">' + med.toFixed(1) + '</span>';
-  } else {
-    cell.innerHTML = '<span style="color:#ccc;">—</span>';
   }
-}
 
-function salvarTurma() {
-  var escola = document.getElementById("l-escola").value;
-  var serie  = document.getElementById("l-serie").value;
-  var turma  = document.getElementById("l-turma").value;
-  var periodo = document.getElementById("l-periodo").value;
-  var msg = document.getElementById("lancamento-turma-msg");
-  msg.style.color = "var(--primary)"; msg.textContent = "⏳ Salvando...";
-  var salvos = 0, erros = 0;
-  var promessas = [];
+  function carregarTurmasLancamento() {
+    var escola = document.getElementById("l-escola").value;
+    var serie = document.getElementById("l-serie").value;
+    var selTurma = document.getElementById("l-turma");
+    selTurma.innerHTML = '<option value="">Selecione a turma...</option>';
+    if (!escola || !serie) return;
+    db.collection("alunos").where("escola","==",escola).where("serie","==",serie).where("ativo","==",true).get().then(function(snap) {
+      var turmas = [];
+      snap.docs.forEach(function(d) { var t = d.data().turma; if (!turmas.includes(t)) turmas.push(t); });
+      turmas.sort().forEach(function(t) {
+        var opt = document.createElement("option");
+        opt.value = t; opt.textContent = t;
+        selTurma.appendChild(opt);
+      });
+    });
+  }
 
-  alunosTurmaAtual.forEach(function(aluno, i) {
+  function carregarAlunosTurma() {
+    var escola = document.getElementById("l-escola").value;
+    var serie = document.getElementById("l-serie").value;
+    var turma = document.getElementById("l-turma").value;
+    var periodo = document.getElementById("l-periodo").value;
+    var wrapper = document.getElementById("lancamento-tabela-wrapper");
+    var vazio = document.getElementById("lancamento-vazio");
+    if (!escola || !serie || !turma) { alert("Selecione escola, série e turma."); return; }
+
+    db.collection("alunos").where("escola","==",escola).where("serie","==",serie).where("turma","==",turma).where("ativo","==",true).get().then(function(alunosSnap) {
+      if (alunosSnap.empty) {
+        vazio.textContent = "Nenhum aluno encontrado para essa turma.";
+        wrapper.classList.add("oculto");
+        vazio.classList.remove("oculto");
+        return;
+      }
+      db.collection("registros").where("escola","==",escola).where("periodo","==",periodo).get().then(function(regSnap) {
+        var nomesDaTurma = new Set(alunosSnap.docs.map(function(d){ return d.data().nome; }));
+        var regPorNome = {};
+        regSnap.docs.forEach(function(d) {
+          var r = d.data();
+          if (nomesDaTurma.has(r.aluno) && !regPorNome[r.aluno]) {
+            regPorNome[r.aluno] = Object.assign({id: d.id}, r);
+          }
+        });
+
+        alunosTurmaAtual = alunosSnap.docs.map(function(d) {
+          var a = d.data();
+          var reg = regPorNome[a.nome] || null;
+          return {
+            alunoId: d.id,
+            nome: a.nome,
+            registroId: reg ? reg.id : null,
+            notaPort: reg ? reg.notaPort : null,
+            notaMat: reg ? reg.notaMat : null,
+            media: reg ? reg.media : null
+          };
+        }).sort(function(a,b){ return a.nome.localeCompare(b.nome); });
+
+        var periodLabel = periodo === "inicial" ? "Diagnóstico Inicial" : "Diagnóstico Final";
+        document.getElementById("lancamento-turma-titulo").textContent = escola + " — " + serie + " / " + turma + " — " + periodLabel;
+        document.getElementById("lancamento-contador").textContent = alunosTurmaAtual.length + " alunos";
+
+        var tbody = document.getElementById("lancamento-tabela-corpo");
+        tbody.innerHTML = "";
+        alunosTurmaAtual.forEach(function(aluno, i) {
+          var pv = aluno.notaPort != null ? aluno.notaPort : "";
+          var mv = aluno.notaMat  != null ? aluno.notaMat  : "";
+          var media = aluno.media != null ? parseFloat(aluno.media) : null;
+          var bc = media != null ? (media>=7?"badge-verde":media>=5?"badge-amarelo":"badge-vermelho") : "";
+          var ms = media != null ? '<span class="badge ' + bc + '">' + media.toFixed(1) + '</span>' : '<span style="color:#ccc;">—</span>';
+          var tr = document.createElement("tr");
+          tr.innerHTML = '<td style="color:var(--text-light);font-size:12px;">' + (i+1) + '</td>' +
+            '<td style="font-weight:500;">' + aluno.nome + '</td>' +
+            '<td style="text-align:center;"><input type="number" id="port-' + i + '" value="' + pv + '" min="0" max="10" step="0.1" class="input-nota" placeholder="—"></td>' +
+            '<td style="text-align:center;"><input type="number" id="mat-' + i + '" value="' + mv + '" min="0" max="10" step="0.1" class="input-nota" placeholder="—"></td>' +
+            '<td style="text-align:center;" id="media-' + i + '">' + ms + '</td>';
+          tbody.appendChild(tr);
+          document.getElementById("port-" + i).addEventListener("input", function(){ atualizarMedia(i); });
+          document.getElementById("mat-"  + i).addEventListener("input", function(){ atualizarMedia(i); });
+        });
+
+        wrapper.classList.remove("oculto");
+        vazio.classList.add("oculto");
+        document.getElementById("lancamento-turma-msg").textContent = "";
+      });
+    });
+  }
+
+  function atualizarMedia(i) {
     var p = parseFloat(document.getElementById("port-"+i).value);
     var m = parseFloat(document.getElementById("mat-"+i).value);
-    if (isNaN(p) && isNaN(m)) return;
-    if ((!isNaN(p)&&(p<0||p>10)) || (!isNaN(m)&&(m<0||m>10))) { erros++; return; }
-    var dados = { aluno: aluno.nome, escola: escola, serie: serie, turma: turma, periodo: periodo, avaliadora: usuarioAtual.email, criadoEm: firebase.firestore.FieldValue.serverTimestamp() };
-    if (!isNaN(p)) dados.notaPort = p;
-    if (!isNaN(m)) dados.notaMat = m;
-    if (!isNaN(p) && !isNaN(m)) dados.media = (Math.round((p+m)/2 * 100) / 100).toFixed(1);
-    var prom;
-    if (aluno.registroId) {
-      prom = db.collection("registros").doc(aluno.registroId).update(dados).then(function(){ salvos++; }).catch(function(){ erros++; });
+    var cell = document.getElementById("media-"+i);
+    if (!isNaN(p) && !isNaN(m)) {
+      var med = Math.round((p+m)/2 * 10) / 10;
+      var bc = med>=7?"badge-verde":med>=5?"badge-amarelo":"badge-vermelho";
+      cell.innerHTML = '<span class="badge ' + bc + '">' + med.toFixed(1) + '</span>';
     } else {
-      prom = db.collection("registros").add(dados).then(function(ref){ alunosTurmaAtual[i].registroId = ref.id; salvos++; }).catch(function(){ erros++; });
+      cell.innerHTML = '<span style="color:#ccc;">—</span>';
     }
-    promessas.push(prom);
-  });
+  }
 
-  Promise.all(promessas).then(function() {
-    if (erros > 0) {
-      msg.style.color = "var(--danger)";
-      msg.textContent = "⚠️ " + salvos + " notas salvas. " + erros + " com erro.";
-    } else {
-      msg.style.color = "var(--success)";
-      msg.textContent = "✅ " + salvos + " notas salvas com sucesso!";
-    }
-    setTimeout(function(){ msg.textContent = ""; }, 4000);
-  });
-}
+  function salvarTurma() {
+    var escola = document.getElementById("l-escola").value;
+    var serie  = document.getElementById("l-serie").value;
+    var turma  = document.getElementById("l-turma").value;
+    var periodo = document.getElementById("l-periodo").value;
+    var msg = document.getElementById("lancamento-turma-msg");
+    msg.style.color = "var(--primary)"; msg.textContent = "⏳ Salvando...";
+    var salvos = 0, erros = 0;
+    var promessas = [];
 
-function limparNotasTurma() {
-  alunosTurmaAtual.forEach(function(a, i) {
-    var pi = document.getElementById("port-"+i);
-    var mi = document.getElementById("mat-"+i);
-    if (pi) pi.value = ""; if (mi) mi.value = "";
-    document.getElementById("media-"+i).innerHTML = '<span style="color:#ccc;">—</span>';
-  });
-}
-
-
-  function aplicarPesquisaGeral() {
-    var termo = document.getElementById("pesquisa-geral").value.toLowerCase().trim();
-    if (!termo) { registrosFiltrados = todosRegistros.slice(); atualizarDashboard(registrosFiltrados); return; }
-    registrosFiltrados = todosRegistros.filter(function(r) {
-      return (r.aluno||"").toLowerCase().includes(termo) ||
-             (r.escola||"").toLowerCase().includes(termo) ||
-             (r.turma||"").toLowerCase().includes(termo) ||
-             (r.serie||"").toLowerCase().includes(termo) ||
-             (r.periodo||"").toLowerCase().includes(termo);
+    alunosTurmaAtual.forEach(function(aluno, i) {
+      var p = parseFloat(document.getElementById("port-"+i).value);
+      var m = parseFloat(document.getElementById("mat-"+i).value);
+      if (isNaN(p) && isNaN(m)) return;
+      if ((!isNaN(p)&&(p<0||p>10)) || (!isNaN(m)&&(m<0||m>10))) { erros++; return; }
+      var dados = { aluno: aluno.nome, escola: escola, serie: serie, turma: turma, periodo: periodo, avaliadora: usuarioAtual.email, criadoEm: firebase.firestore.FieldValue.serverTimestamp() };
+      if (!isNaN(p)) dados.notaPort = p;
+      if (!isNaN(m)) dados.notaMat = m;
+      if (!isNaN(p) && !isNaN(m)) dados.media = (Math.round((p+m)/2 * 100) / 100).toFixed(1);
+      var prom;
+      if (aluno.registroId) {
+        prom = db.collection("registros").doc(aluno.registroId).update(dados).then(function(){ salvos++; }).catch(function(){ erros++; });
+      } else {
+        prom = db.collection("registros").add(dados).then(function(ref){ alunosTurmaAtual[i].registroId = ref.id; salvos++; }).catch(function(){ erros++; });
+      }
+      promessas.push(prom);
     });
-    atualizarDashboard(registrosFiltrados);
-  }
-  function limparPesquisaGeral() {
-    document.getElementById("pesquisa-geral").value = "";
-    registrosFiltrados = todosRegistros.slice();
-    atualizarDashboard(registrosFiltrados);
-  }
-  document.addEventListener("DOMContentLoaded", function() {
-    var inp = document.getElementById("pesquisa-geral");
-    if (inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter") aplicarPesquisaGeral(); });
-  });
 
-  
+    Promise.all(promessas).then(function() {
+      if (erros > 0) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = "⚠️ " + salvos + " notas salvas. " + erros + " com erro.";
+      } else {
+        msg.style.color = "var(--success)";
+        msg.textContent = "✅ " + salvos + " notas salvas com sucesso!";
+      }
+      setTimeout(function(){ msg.textContent = ""; }, 4000);
+    });
+  }
+
+  function limparNotasTurma() {
+    alunosTurmaAtual.forEach(function(a, i) {
+      var pi = document.getElementById("port-"+i);
+      var mi = document.getElementById("mat-"+i);
+      if (pi) pi.value = ""; if (mi) mi.value = "";
+      document.getElementById("media-"+i).innerHTML = '<span style="color:#ccc;">—</span>';
+    });
+  }
 
   // COMPARATIVO
-document.getElementById("btn-gerar-comparativo").addEventListener("click", function() {
-  var escola = document.getElementById("comp-escola").value;
-  var serie  = document.getElementById("comp-serie").value;
-  function filtrar(p) {
-    return todosRegistros.filter(function(r) {
-      return r.periodo === p && r.notaPort != null &&
-             (!escola || r.escola === escola) && (!serie || r.serie === serie);
+  document.getElementById("btn-gerar-comparativo").addEventListener("click", function() {
+    var escola = document.getElementById("comp-escola").value;
+    var serie  = document.getElementById("comp-serie").value;
+    function filtrar(p) {
+      return todosRegistros.filter(function(r) {
+        return r.periodo === p && r.notaPort != null &&
+               (!escola || r.escola === escola) && (!serie || r.serie === serie);
+      });
+    }
+    var ini = filtrar("inicial"), fin = filtrar("final");
+    var series = ["1º Ano","2º Ano","3º Ano","4º Ano","5º Ano"];
+    function med(arr, s, c) {
+      var it = arr.filter(function(r){ return r.serie === s; });
+      return it.length ? (it.reduce(function(a,r){ return a+r[c]; },0)/it.length).toFixed(1) : 0;
+    }
+    ["Port","Mat"].forEach(function(d) {
+      var c = "nota" + d;
+      renderChart("grafico-comp-" + d.toLowerCase(), "bar", series, [
+        {label:"Inicial", data: series.map(function(s){ return med(ini,s,c); }), backgroundColor:"#2e86c1bb"},
+        {label:"Final",   data: series.map(function(s){ return med(fin,s,c); }), backgroundColor:"#27ae60bb"}
+      ]);
     });
-  }
-  var ini = filtrar("inicial"), fin = filtrar("final");
-  var series = ["1º Ano","2º Ano","3º Ano","4º Ano","5º Ano"];
-  function med(arr, s, c) {
-    var it = arr.filter(function(r){ return r.serie === s; });
-    return it.length ? (it.reduce(function(a,r){ return a+r[c]; },0)/it.length).toFixed(1) : 0;
-  }
-  ["Port","Mat"].forEach(function(d) {
-    var c = "nota" + d;
-    renderChart("grafico-comp-" + d.toLowerCase(), "bar", series, [
-      {label:"Inicial", data: series.map(function(s){ return med(ini,s,c); }), backgroundColor:"#2e86c1bb"},
-      {label:"Final",   data: series.map(function(s){ return med(fin,s,c); }), backgroundColor:"#27ae60bb"}
-    ]);
   });
-});
-
-
 
   // ADMIN
-document.getElementById("btn-limpar-tudo").addEventListener("click", function() {
-  if (!confirm("ATENÇÃO: Isso vai apagar TODOS os registros. Confirma?")) return;
-  db.collection("registros").get().then(function(snap) {
-    var batch = db.batch();
-    snap.docs.forEach(function(d){ batch.delete(d.ref); });
-    return batch.commit();
-  }).then(function(){ alert("Todos os registros foram excluídos."); });
-});
-
-function excluirRegistro(id) {
-  if (!confirm("Excluir este registro?")) return;
-  db.collection("registros").doc(id).delete();
-}
-
+  document.getElementById("btn-limpar-tudo").addEventListener("click", function() {
+    if (!confirm("ATENÇÃO: Isso vai apagar TODOS os registros. Confirma?")) return;
+    db.collection("registros").get().then(function(snap) {
+      var batch = db.batch();
+      snap.docs.forEach(function(d){ batch.delete(d.ref); });
+      return batch.commit();
+    }).then(function(){ alert("Todos os registros foram excluídos."); });
+  });
 
 </script>
 </body>
