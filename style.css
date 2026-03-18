@@ -78,7 +78,7 @@ body {
 .badge-verde { background: #d5f5e3; color: #1e8449; }
 .badge-amarelo { background: #fef9e7; color: #b7770d; }
 .badge-vermelho { background: #fadbd8; color: #922b21; }
-.badge-azul { background: #e0f2fe; color: #154360; }
+.badge-azul { background: #e0f2fe; color: #154360; } /* Novo badge para "Matriculados" */
 
 /* ==========================================
    LOGIN
@@ -118,6 +118,7 @@ body {
 .form-group {
   margin-bottom: 18px;
   text-align: left;
+  width: 100%;
 }
 
 .form-group label {
@@ -479,6 +480,12 @@ tbody td {
   vertical-align: middle;
 }
 
+/* Paginação */
+#paginacao-resultados span {
+  min-width: 100px;
+  text-align: center;
+}
+
 /* Campos de entrada de nota na tabela */
 .input-nota {
   width: 80px;
@@ -541,6 +548,7 @@ tbody td {
   margin-bottom: 24px;
 }
 
+/* Itens da lista de usuários */
 .usuario-item {
   display: flex;
   align-items: center;
@@ -591,6 +599,8 @@ tbody td {
   .cards-grid { grid-template-columns: 1fr 1fr; }
   
   .filtros-grid { grid-template-columns: 1fr; }
+  
+  .tabela-header { flex-direction: column; align-items: flex-start; }
 }
 
 @media(max-width: 480px) {
