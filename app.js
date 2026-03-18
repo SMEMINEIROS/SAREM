@@ -15,40 +15,19 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ==========================================
-// VARIÁVEIS GLOBAIS E LISTAS
+// VARIÁVEIS GLOBAIS
 // ==========================================
-const ESCOLAS = [
-  "EM Comecinho de Vida",
-  "EM Dom Bosco",
-  "EM Elias Carrijo de Sousa",
-  "EM Maria Aparecida Almeida Paniago", 
-  "EM Maria Eduarda Condinho Filgueiras",
-  "EM Otalécio Alves Irineu",
-  "EM Padre Maximinio",
-  "EM Professor Juarez Távora de Carvalho",
-  "Escola Municipal Professor Salviano Neves Amorim",
-  "EM Santo Antônio",
-  "EM Tonico Corredeira",
-  "EM Reverendo Eudóxio",
-  "EM Castelo Branco",
-  "Escola Américo Caetano",
-  "Escola Farroupilha",
-  "Escola Farroupilha Extensão",
-  "Escola Antonio Alves",
-  "Escola Gustavo Alves",
-  "Escola Antonio Messias",
-  "Escola Caindão",
-  "Escola Salto",
-  "Escola Morro Dois Irmãos",
-  "Escola Pinguela"
-];
-
 const ADMINEMAIL = "admin@sarem.com";
 let usuarioAtual = null;
 let todosRegistros = [];
 let registrosFiltrados = [];
 let charts = {};
 let alunosTurmaAtual = [];
+let ESCOLAS_DINAMICAS = []; // Agora vem do banco de dados
+
+// Variáveis de Paginação
+let paginaAtual = 1;
+const itensPorPagina = 50;
 
 // ==========================================
 // FUNÇÕES UTILITÁRIAS
@@ -57,7 +36,7 @@ function arred(n) {
   return (Math.round(n * 10) / 10).toFixed(1);
 }
 
-// Sistema de Notificações Toast (Substitui os alerts nativos)
+// Sistema de Notificações Toast
 function showToast(mensagem, tipo = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -69,16 +48,13 @@ function showToast(mensagem, tipo = 'info') {
   
   const icone = tipo === 'success' ? '✅' : tipo === 'error' ? '⚠️' : 'ℹ️';
   toast.innerHTML = `<span>${icone}</span> <span>${mensagem}</span>`;
-  
   container.appendChild(toast);
   
-  // Animação de entrada
   requestAnimationFrame(() => {
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
   });
   
-  // Animação de saída e remoção
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(20px)';
@@ -111,7 +87,8 @@ auth.onAuthStateChanged(user => {
       document.getElementById("btn-admin").classList.remove("oculto");
     }
     
-    popularSelectsEscolas();
+    carregarEscolas();
+    carregarUsuariosAdmin();
     carregarRegistros();
   } else {
     document.getElementById("pagina-login").classList.remove("oculto");
@@ -154,19 +131,58 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 });
 
 // ==========================================
-// PREENCHIMENTO DE DADOS
+// CARREGAMENTO DINÂMICO (ESCOLAS E USUÁRIOS)
 // ==========================================
+async function carregarEscolas() {
+  const snap = await db.collection("escolas").orderBy("nome").get();
+  
+  if (snap.empty) {
+    // Se for a primeira vez, insere as escolas padrões que você já tinha
+    const padroes = ["EM Comecinho de Vida", "EM Dom Bosco", "EM Elias Carrijo de Sousa", "EM Maria Aparecida Almeida Paniago", "EM Maria Eduarda Condinho Filgueiras", "EM Otalécio Alves Irineu", "EM Padre Maximinio", "EM Professor Juarez Távora de Carvalho", "Escola Municipal Professor Salviano Neves Amorim", "EM Santo Antônio", "EM Tonico Corredeira"];
+    const batch = db.batch();
+    padroes.forEach(e => batch.set(db.collection("escolas").doc(), { nome: e }));
+    await batch.commit();
+    ESCOLAS_DINAMICAS = padroes.sort();
+  } else {
+    ESCOLAS_DINAMICAS = snap.docs.map(d => d.data().nome);
+  }
+  popularSelectsEscolas();
+}
+
 function popularSelectsEscolas() {
   ["filtro-escola", "l-escola", "comp-escola", "admin-transfer-escola"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const primeira = el.options[0] ? el.options[0].outerHTML : "<option value=''>Selecione...</option>";
     el.innerHTML = primeira;
-    ESCOLAS.sort().forEach(e => {
+    ESCOLAS_DINAMICAS.forEach(e => {
       const opt = document.createElement("option");
       opt.value = e; opt.textContent = e;
       el.appendChild(opt);
     });
+  });
+}
+
+async function carregarUsuariosAdmin() {
+  const lista = document.getElementById("lista-usuarios-admin");
+  if (!lista) return;
+  
+  const snap = await db.collection("usuarios").orderBy("nome").get();
+  lista.innerHTML = "";
+  
+  if (snap.empty) {
+    lista.innerHTML = `<p style="font-size:13px; color:var(--text-light); text-align:center;">Nenhum usuário cadastrado via painel. Apenas o Admin padrão está ativo.</p>`;
+    return;
+  }
+  
+  snap.docs.forEach(doc => {
+    const u = doc.data();
+    const badge = u.cargo === 'admin' ? '<span class="badge badge-amarelo">Admin</span>' : '<span class="badge badge-verde">Avaliador</span>';
+    lista.innerHTML += `
+      <div class="usuario-item">
+        <div class="usuario-info"><strong>${u.nome}</strong><small>${u.email}</small></div>
+        ${badge}
+      </div>`;
   });
 }
 
@@ -210,14 +226,19 @@ function popularFiltroAvaliadora(dados) {
 // LÓGICA DO DASHBOARD E FILTROS
 // ==========================================
 document.getElementById("btn-aplicar-filtros").addEventListener("click", () => {
+  const ano    = document.getElementById("filtro-ano").value;
   const escola = document.getElementById("filtro-escola").value;
   const serie  = document.getElementById("filtro-serie").value;
   const turma  = document.getElementById("filtro-turma").value;
   const aval   = document.getElementById("filtro-avaliadora").value;
   const per    = document.getElementById("filtro-periodo").value;
   
+  paginaAtual = 1; // Reseta a paginação ao filtrar
+  
   registrosFiltrados = todosRegistros.filter(r => {
-    return (!escola || r.escola === escola) &&
+    const rAno = r.ano || "2026"; // Fallback para dados antigos
+    return (!ano    || rAno === ano) &&
+           (!escola || r.escola === escola) &&
            (!serie  || r.serie  === serie)  &&
            (!turma  || r.turma  === turma)  &&
            (!aval   || r.avaliadora === aval) &&
@@ -231,6 +252,9 @@ document.getElementById("btn-limpar-filtros").addEventListener("click", () => {
   ["filtro-escola", "filtro-serie", "filtro-turma", "filtro-avaliadora", "filtro-periodo"].forEach(id => {
     document.getElementById(id).value = "";
   });
+  document.getElementById("filtro-ano").value = "2026"; // Volta pro padrão
+  
+  paginaAtual = 1;
   registrosFiltrados = todosRegistros.slice();
   atualizarDashboard(registrosFiltrados);
   renderizarTabela(registrosFiltrados, false);
@@ -238,14 +262,17 @@ document.getElementById("btn-limpar-filtros").addEventListener("click", () => {
 
 document.getElementById("btn-pesquisa").addEventListener("click", () => {
   const termo = document.getElementById("pesquisa-geral").value.toLowerCase().trim();
+  paginaAtual = 1;
+  
   if (!termo) { registrosFiltrados = todosRegistros.slice(); atualizarDashboard(registrosFiltrados); return; }
   
   registrosFiltrados = todosRegistros.filter(r => {
+    const rAno = r.ano || "2026";
     return (r.aluno || "").toLowerCase().includes(termo) ||
            (r.escola || "").toLowerCase().includes(termo) ||
            (r.turma || "").toLowerCase().includes(termo) ||
            (r.serie || "").toLowerCase().includes(termo) ||
-           (r.periodo || "").toLowerCase().includes(termo);
+           (rAno).includes(termo);
   });
   atualizarDashboard(registrosFiltrados);
   renderizarTabela(registrosFiltrados, true);
@@ -253,6 +280,7 @@ document.getElementById("btn-pesquisa").addEventListener("click", () => {
 
 document.getElementById("btn-limpar-pesquisa").addEventListener("click", () => {
   document.getElementById("pesquisa-geral").value = "";
+  paginaAtual = 1;
   registrosFiltrados = todosRegistros.slice();
   atualizarDashboard(registrosFiltrados);
   renderizarTabela(registrosFiltrados, false);
@@ -274,7 +302,7 @@ function atualizarDashboard(dados) {
   document.getElementById("card-media-mat").textContent = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   
-  renderizarTabela(dados, false); // Só atualiza a tabela interna, o front decide se exibe
+  renderizarTabela(dados, false); 
   renderizarTop3(comNota);
   renderizarPizzas(comNota);
 }
@@ -289,11 +317,7 @@ function renderizarTop3(dados) {
   
   const lista = Object.keys(grupos).map(e => {
     const gp = grupos[e].port, gm = grupos[e].mat;
-    return {
-      escola: e,
-      mp: gp.reduce((a, b) => a + b, 0) / gp.length,
-      mm: gm.reduce((a, b) => a + b, 0) / gm.length
-    };
+    return { escola: e, mp: gp.reduce((a, b) => a + b, 0) / gp.length, mm: gm.reduce((a, b) => a + b, 0) / gm.length };
   });
   
   function renderEl(elId, campo) {
@@ -308,9 +332,7 @@ function renderizarTop3(dados) {
       const bc = parseFloat(val) >= 7 ? "badge-verde" : parseFloat(val) >= 5 ? "badge-amarelo" : "badge-vermelho";
       const div = document.createElement("div");
       div.className = "top3-item";
-      div.innerHTML = `<span class="top3-medal">${medals[i]}</span>
-                       <span class="top3-nome">${e.escola}</span>
-                       <span class="top3-nota"><span class="badge ${bc}">${val}</span></span>`;
+      div.innerHTML = `<span class="top3-medal">${medals[i]}</span><span class="top3-nome">${e.escola}</span><span class="top3-nota"><span class="badge ${bc}">${val}</span></span>`;
       el.appendChild(div);
     });
   }
@@ -324,9 +346,7 @@ function renderizarPizzas(dados) {
   
   function contar(arr) {
     const r = [0, 0, 0, 0, 0];
-    arr.forEach(n => {
-      if (n < 3) r[0]++; else if (n < 5) r[1]++; else if (n < 7) r[2]++; else if (n < 9) r[3]++; else r[4]++;
-    });
+    arr.forEach(n => { if (n < 3) r[0]++; else if (n < 5) r[1]++; else if (n < 7) r[2]++; else if (n < 9) r[3]++; else r[4]++; });
     return r;
   }
   
@@ -345,11 +365,15 @@ function renderizarPizzas(dados) {
   pizza("grafico-dist-mat", dados.map(r => parseFloat(r.notaMat)));
 }
 
+// ==========================================
+// RENDERIZAR TABELA COM PAGINAÇÃO
+// ==========================================
 function renderizarTabela(dados, mostrar) {
   const card = document.getElementById("card-resultados");
   const tbody = document.getElementById("tabela-corpo");
   const vazio = document.getElementById("tabela-vazia");
   const count = document.getElementById("resultados-count");
+  const divPaginacao = document.getElementById("paginacao-resultados");
   
   tbody.innerHTML = "";
   if (!mostrar) { if (card) card.classList.add("oculto"); return; }
@@ -358,14 +382,33 @@ function renderizarTabela(dados, mostrar) {
   const comNota = dados.filter(r => r.notaPort != null);
   if (count) count.textContent = comNota.length + " aluno(s)";
   
-  if (comNota.length === 0) { vazio.classList.remove("oculto"); return; }
-  vazio.classList.add("oculto");
+  if (comNota.length === 0) { 
+    vazio.classList.remove("oculto"); 
+    divPaginacao.classList.add("oculto");
+    return; 
+  }
   
-  comNota.forEach(r => {
+  vazio.classList.add("oculto");
+  divPaginacao.classList.remove("oculto");
+
+  // Lógica de Paginação
+  const totalPaginas = Math.ceil(comNota.length / itensPorPagina);
+  if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+  
+  document.getElementById("texto-paginacao").textContent = `Página ${paginaAtual} de ${totalPaginas}`;
+  
+  const inicio = (paginaAtual - 1) * itensPorPagina;
+  const fim = inicio + itensPorPagina;
+  const fatia = comNota.slice(inicio, fim);
+  
+  fatia.forEach(r => {
     const media = parseFloat(r.media);
     const bc = media >= 7 ? "badge-verde" : media >= 5 ? "badge-amarelo" : "badge-vermelho";
+    const anoFormatado = r.ano || "2026";
+    
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td style="font-weight:600">${r.aluno}</td>
+    tr.innerHTML = `<td style="color:var(--text-light); font-size:12px;">${anoFormatado}</td>
+                    <td style="font-weight:600">${r.aluno}</td>
                     <td style="font-size:12px">${r.escola}</td>
                     <td>${r.serie}</td><td>${r.turma}</td>
                     <td>${r.periodo === "inicial" ? "Inicial" : "Final"}</td>
@@ -376,21 +419,37 @@ function renderizarTabela(dados, mostrar) {
   });
 }
 
+document.getElementById('btn-pagina-anterior').addEventListener('click', () => {
+  if (paginaAtual > 1) { 
+    paginaAtual--; 
+    renderizarTabela(registrosFiltrados, true); 
+  }
+});
+
+document.getElementById('btn-pagina-proxima').addEventListener('click', () => {
+  const comNota = registrosFiltrados.filter(r => r.notaPort != null);
+  const totalPaginas = Math.ceil(comNota.length / itensPorPagina);
+  if (paginaAtual < totalPaginas) { 
+    paginaAtual++; 
+    renderizarTabela(registrosFiltrados, true); 
+  }
+});
+
 // ==========================================
 // EXPORTAR PARA EXCEL
 // ==========================================
 document.getElementById('btn-exportar-excel').addEventListener('click', () => {
   if (registrosFiltrados.length === 0) { 
-    showToast("Não há dados para exportar. Aplique um filtro primeiro.", "error"); 
+    showToast("Não há dados para exportar. Aplique um filtro.", "error"); 
     return; 
   }
   
   showToast("Gerando planilha...", "info");
   
-  // Prepara os dados pro formato do Excel
   const dadosExportacao = registrosFiltrados
-    .filter(r => r.notaPort != null) // Exporta apenas quem tem nota
+    .filter(r => r.notaPort != null)
     .map(r => ({
+      "Ano": r.ano || "2026",
       "Escola": r.escola,
       "Série": r.serie,
       "Turma": r.turma,
@@ -406,13 +465,12 @@ document.getElementById('btn-exportar-excel').addEventListener('click', () => {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Resultados SAREM");
   
-  // Salva o arquivo
   XLSX.writeFile(workbook, "Resultados_SAREM.xlsx");
   showToast("Planilha exportada com sucesso!", "success");
 });
 
 // ==========================================
-// LANÇAMENTO DE NOTAS (COM BATCH)
+// LANÇAMENTO DE NOTAS (COM BATCH E ANO)
 // ==========================================
 document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
 document.getElementById("l-serie").addEventListener("change", carregarTurmasLancamento);
@@ -458,6 +516,7 @@ function carregarTurmasLancamento() {
 }
 
 function carregarAlunosTurma() {
+  const ano = document.getElementById("l-ano").value;
   const escola = document.getElementById("l-escola").value;
   const serie = document.getElementById("l-serie").value;
   const turma = document.getElementById("l-turma").value;
@@ -475,12 +534,15 @@ function carregarAlunosTurma() {
       return;
     }
     
+    // Busca registros cruzando a escola, periodo E o ANO
     db.collection("registros").where("escola", "==", escola).where("periodo", "==", periodo).get().then(regSnap => {
       const nomesDaTurma = new Set(alunosSnap.docs.map(d => d.data().nome));
       const regPorNome = {};
+      
       regSnap.docs.forEach(d => {
         const r = d.data();
-        if (nomesDaTurma.has(r.aluno) && !regPorNome[r.aluno]) {
+        const rAno = r.ano || "2026";
+        if (nomesDaTurma.has(r.aluno) && rAno === ano && !regPorNome[r.aluno]) {
           regPorNome[r.aluno] = Object.assign({ id: d.id }, r);
         }
       });
@@ -499,7 +561,7 @@ function carregarAlunosTurma() {
       }).sort((a, b) => a.nome.localeCompare(b.nome));
 
       const periodLabel = periodo === "inicial" ? "Diagnóstico Inicial" : "Diagnóstico Final";
-      document.getElementById("lancamento-turma-titulo").textContent = `${escola} — ${serie} / ${turma} — ${periodLabel}`;
+      document.getElementById("lancamento-turma-titulo").textContent = `(${ano}) ${escola} — ${serie} / ${turma} — ${periodLabel}`;
       
       atualizarContadoresLancamento();
 
@@ -527,7 +589,6 @@ function carregarAlunosTurma() {
 
       wrapper.classList.remove("oculto");
       vazio.classList.add("oculto");
-      document.getElementById("lancamento-turma-msg").textContent = "";
     });
   });
 }
@@ -537,17 +598,14 @@ function atualizarContadoresLancamento() {
   let lancados = 0;
   
   alunosTurmaAtual.forEach((aluno, i) => {
-    // Conta como lançado se tiver pelo menos uma das notas ou se o campo input estiver preenchido agora
     const inPort = document.getElementById(`port-${i}`);
     const inMat = document.getElementById(`mat-${i}`);
     const temNotaSalva = aluno.notaPort != null || aluno.notaMat != null;
     const temNotaInput = (inPort && inPort.value !== "") || (inMat && inMat.value !== "");
-    
     if(temNotaSalva || temNotaInput) lancados++;
   });
   
   const pendentes = matriculados - lancados;
-  
   document.getElementById('badge-matriculados').textContent = `Matriculados: ${matriculados}`;
   document.getElementById('badge-lancados').textContent = `Lançados: ${lancados}`;
   document.getElementById('badge-pendentes').textContent = `Pendentes: ${pendentes}`;
@@ -574,8 +632,8 @@ function atualizarMedia(i) {
   atualizarContadoresLancamento();
 }
 
-// Melhoria: Salvamento em Lote (Batch)
 async function salvarTurmaBatch() {
+  const ano = document.getElementById("l-ano").value;
   const escola = document.getElementById("l-escola").value;
   const serie  = document.getElementById("l-serie").value;
   const turma  = document.getElementById("l-turma").value;
@@ -593,10 +651,8 @@ async function salvarTurmaBatch() {
     const p = parseFloat(document.getElementById(`port-${i}`).value);
     const m = parseFloat(document.getElementById(`mat-${i}`).value);
     
-    // Ignora se não digitou nada
     if (isNaN(p) && isNaN(m)) return;
     
-    // Validação
     if ((!isNaN(p) && (p < 0 || p > 10)) || (!isNaN(m) && (m < 0 || m > 10))) { 
       errosInput++; 
       document.getElementById(`port-${i}`).style.borderColor = "red";
@@ -604,6 +660,7 @@ async function salvarTurmaBatch() {
     }
 
     const dados = { 
+      ano: ano,
       aluno: aluno.nome, 
       escola: escola, 
       serie: serie, 
@@ -617,12 +674,10 @@ async function salvarTurmaBatch() {
     if (!isNaN(m)) dados.notaMat = m;
     if (!isNaN(p) && !isNaN(m)) dados.media = (Math.round((p + m) / 2 * 100) / 100).toFixed(1);
 
-    // Se já tinha registro, atualiza. Se não, cria um novo doc no batch
     const docRef = aluno.registroId 
       ? db.collection("registros").doc(aluno.registroId) 
       : db.collection("registros").doc();
       
-    // Set com merge substitui update para garantir que cria se não existir
     batch.set(docRef, dados, { merge: true });
     notasValidasCount++;
   });
@@ -643,8 +698,8 @@ async function salvarTurmaBatch() {
 
   try {
     await batch.commit();
-    showToast(`✅ ${notasValidasCount} notas salvas na base de dados!`, "success");
-    carregarAlunosTurma(); // Recarrega para obter os novos IDs
+    showToast(`✅ ${notasValidasCount} notas salvas!`, "success");
+    carregarAlunosTurma(); 
   } catch (error) {
     console.error("Erro ao salvar:", error);
     showToast("Erro ao comunicar com o servidor.", "error");
@@ -668,13 +723,17 @@ function limparNotasTurma() {
 // COMPARATIVO
 // ==========================================
 document.getElementById("btn-gerar-comparativo").addEventListener("click", () => {
+  const ano = document.getElementById("comp-ano").value;
   const escola = document.getElementById("comp-escola").value;
   const serie  = document.getElementById("comp-serie").value;
   
   function filtrar(p) {
     return todosRegistros.filter(r => {
+      const rAno = r.ano || "2026";
       return r.periodo === p && r.notaPort != null &&
-             (!escola || r.escola === escola) && (!serie || r.serie === serie);
+             (!ano || rAno === ano) &&
+             (!escola || r.escola === escola) && 
+             (!serie || r.serie === serie);
     });
   }
   
@@ -696,8 +755,110 @@ document.getElementById("btn-gerar-comparativo").addEventListener("click", () =>
 });
 
 // ==========================================
-// ADMIN (Painel Exclusivo)
+// ADMIN (Usuários, Escolas e Transferência)
 // ==========================================
+
+// Adicionar Escola
+document.getElementById('btn-adicionar-escola').addEventListener('click', async () => {
+  const input = document.getElementById('admin-nova-escola');
+  const nome = input.value.trim();
+  if(!nome) return showToast("Digite o nome da escola.", "error");
+  
+  try {
+    await db.collection("escolas").add({ nome });
+    showToast("Escola adicionada com sucesso!", "success");
+    input.value = "";
+    carregarEscolas(); // Recarrega todas as listas
+  } catch(e) {
+    showToast("Erro ao adicionar escola.", "error");
+  }
+});
+
+// Modal Novo Usuário
+document.getElementById('btn-abrir-modal-usuario').addEventListener('click', () => {
+  document.getElementById('modal-novo-usuario').classList.remove('oculto');
+});
+document.getElementById('btn-fechar-modal-usuario').addEventListener('click', () => {
+  document.getElementById('modal-novo-usuario').classList.add('oculto');
+});
+
+document.getElementById('btn-salvar-usuario').addEventListener('click', async () => {
+  const nome = document.getElementById('modal-user-nome').value.trim();
+  const email = document.getElementById('modal-user-email').value.trim();
+  const cargo = document.getElementById('modal-user-cargo').value;
+  
+  if(!nome || !email) return showToast("Preencha nome e e-mail.", "error");
+  
+  const btn = document.getElementById('btn-salvar-usuario');
+  btn.textContent = "Salvando...";
+  btn.disabled = true;
+
+  try {
+    await db.collection("usuarios").add({ nome, email, cargo });
+    showToast("Usuário salvo! Crie a senha no Firebase Auth.", "success");
+    document.getElementById('modal-novo-usuario').classList.add('oculto');
+    carregarUsuariosAdmin();
+    
+    // Limpa campos
+    document.getElementById('modal-user-nome').value = "";
+    document.getElementById('modal-user-email').value = "";
+  } catch(e) {
+    showToast("Erro ao criar usuário.", "error");
+  } finally {
+    btn.textContent = "Salvar";
+    btn.disabled = false;
+  }
+});
+
+// Transferência de Aluno
+document.getElementById('btn-transferir-aluno').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-transferir-aluno');
+  const nome = document.getElementById('admin-transfer-nome').value.trim().toUpperCase();
+  const novaEscola = document.getElementById('admin-transfer-escola').value;
+  const novaSerie = document.getElementById('admin-transfer-serie').value;
+  const novaTurma = document.getElementById('admin-transfer-turma').value.trim().toUpperCase();
+
+  if(!nome || !novaEscola || !novaSerie || !novaTurma) {
+    return showToast("Preencha todos os campos da transferência.", "error"); 
+  }
+
+  btn.textContent = "Transferindo...";
+  btn.disabled = true;
+
+  try {
+    const alunoSnap = await db.collection("alunos").where("nome", "==", nome).get();
+    if(alunoSnap.empty) { 
+      showToast(`O aluno "${nome}" não foi encontrado. Verifique a grafia.`, "error"); 
+      btn.textContent = "Realizar Transferência";
+      btn.disabled = false;
+      return; 
+    }
+
+    const batch = db.batch();
+    alunoSnap.docs.forEach(doc => {
+        batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
+    });
+
+    const regSnap = await db.collection("registros").where("aluno", "==", nome).get();
+    regSnap.docs.forEach(doc => {
+        batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
+    });
+
+    await batch.commit();
+    showToast(`O aluno(a) ${nome} foi transferido com sucesso!`, "success");
+    
+    document.getElementById('admin-transfer-nome').value = "";
+    document.getElementById('admin-transfer-turma').value = "";
+  } catch(e) {
+    console.error(e);
+    showToast("Erro ao transferir.", "error");
+  } finally {
+    btn.textContent = "Realizar Transferência";
+    btn.disabled = false;
+  }
+});
+
+// Zona de Perigo
 document.getElementById("btn-limpar-tudo").addEventListener("click", async () => {
   if (!confirm("⚠️ ATENÇÃO: Isso vai apagar TODAS AS NOTAS do sistema.\nOs alunos continuarão cadastrados.\nTem certeza absoluta?")) return;
   
@@ -711,59 +872,5 @@ document.getElementById("btn-limpar-tudo").addEventListener("click", async () =>
     showToast("Todos os registros de notas foram apagados.", "success");
   } catch(e) {
     showToast("Erro ao apagar registros.", "error");
-  }
-});
-
-document.getElementById('btn-transferir-aluno').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-transferir-aluno');
-  const nome = document.getElementById('admin-transfer-nome').value.trim().toUpperCase();
-  const novaEscola = document.getElementById('admin-transfer-escola').value;
-  const novaSerie = document.getElementById('admin-transfer-serie').value;
-  const novaTurma = document.getElementById('admin-transfer-turma').value.trim().toUpperCase();
-
-  if(!nome || !novaEscola || !novaSerie || !novaTurma) {
-    showToast("Preencha todos os campos da transferência.", "error"); 
-    return;
-  }
-
-  btn.textContent = "Transferindo...";
-  btn.disabled = true;
-
-  try {
-    // 1. Acha o aluno no cadastro base
-    const alunoSnap = await db.collection("alunos").where("nome", "==", nome).get();
-    if(alunoSnap.empty) { 
-      showToast(`O aluno "${nome}" não foi encontrado no sistema. Verifique a grafia.`, "error"); 
-      btn.textContent = "Transferir Aluno";
-      btn.disabled = false;
-      return; 
-    }
-
-    const batch = db.batch();
-    
-    // Atualiza a ficha cadastral do aluno
-    alunoSnap.docs.forEach(doc => {
-        batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
-    });
-
-    // 2. Acha os registros (notas antigas) do aluno e move junto com ele
-    const regSnap = await db.collection("registros").where("aluno", "==", nome).get();
-    regSnap.docs.forEach(doc => {
-        batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
-    });
-
-    await batch.commit();
-    showToast(`O aluno(a) ${nome} foi transferido com sucesso!`, "success");
-    
-    // Limpar campos
-    document.getElementById('admin-transfer-nome').value = "";
-    document.getElementById('admin-transfer-turma').value = "";
-    
-  } catch(e) {
-    console.error(e);
-    showToast("Erro de comunicação ao transferir.", "error");
-  } finally {
-    btn.textContent = "Transferir Aluno";
-    btn.disabled = false;
   }
 });
