@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -17,8 +18,8 @@
   <div id="pagina-login">
     <div class="login-card">
       <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px">
-        <img src="logo-prefeitura.png" alt="Prefeitura" style="height:80px;object-fit:contain">
-        <img src="logo-secretaria.png" alt="SME" style="height:80px;object-fit:contain">
+        <img src="logo-prefeitura.png" alt="Prefeitura" style="height:80px;object-fit:contain" onerror="this.style.display='none'">
+        <img src="logo-secretaria.png" alt="SME" style="height:80px;object-fit:contain" onerror="this.style.display='none'">
       </div>
       <div class="login-title">SAREM</div>
       <div class="login-subtitle">Sistema de Avaliação e Resultados<br>Secretaria Municipal de Educação — Mineiros/GO</div>
@@ -37,12 +38,14 @@
         <button class="btn btn-sm btn-logout" id="btn-logout">Sair</button>
       </div>
     </header>
+    
     <nav class="nav">
       <button class="nav-btn ativo" data-secao="dashboard">Dashboard</button>
       <button class="nav-btn" data-secao="lancamento">Lançar Notas</button>
       <button class="nav-btn" data-secao="comparativo">Comparativo</button>
       <button class="nav-btn admin-only oculto" id="btn-admin" data-secao="admin">Admin</button>
     </nav>
+    
     <main class="conteudo">
 
       <div id="secao-dashboard">
@@ -68,9 +71,6 @@
             <select id="filtro-turma"><option value="">Todas as Turmas</option></select>
             <select id="filtro-avaliadora">
               <option value="">Todas as Avaliadoras</option>
-              <option value="jane@sarem.com">Jane 4 e 5 ano</option>
-              <option value="marcia@sarem.com">Márcia 2 ano</option>
-              <option value="wellita@sarem.com">Wellita 3 ano</option>
             </select>
             <select id="filtro-periodo">
               <option value="">Ambos os Períodos</option>
@@ -119,10 +119,13 @@
         <div class="tabela-card oculto" id="card-resultados">
           <div class="tabela-header">
             <div class="tabela-titulo">📋 Resultados</div>
-            <span id="resultados-count" style="font-size:12px;color:var(--text-light)"></span>
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <span id="resultados-count" style="font-size:12px;color:var(--text-light)"></span>
+              <button class="btn btn-success btn-sm" id="btn-exportar-excel">📊 Exportar para Excel</button>
+            </div>
           </div>
           <div class="tabela-wrapper">
-            <table>
+            <table id="tabela-dados">
               <thead><tr><th>Aluno</th><th>Escola</th><th>Série</th><th>Turma</th><th>Período</th><th>Português</th><th>Matemática</th><th>Média</th></tr></thead>
               <tbody id="tabela-corpo"></tbody>
             </table>
@@ -134,6 +137,7 @@
       <div id="secao-lancamento" class="oculto">
         <div class="lancamento-card" style="max-width:960px;">
           <div class="lancamento-titulo">✏️ Lançar Notas por Turma</div>
+          
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
             <div class="form-group" style="margin:0;">
               <label>Escola</label>
@@ -158,10 +162,17 @@
           <button class="btn btn-primary" id="btn-carregar-alunos" style="margin-bottom:24px;">🔍 Carregar Alunos</button>
 
           <div id="lancamento-tabela-wrapper" class="oculto">
+            
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
               <div style="font-size:14px;font-weight:700;color:var(--primary);" id="lancamento-turma-titulo"></div>
-              <div style="font-size:13px;color:var(--text-light);" id="lancamento-contador"></div>
+              
+              <div id="status-lancamento" style="display:flex; gap:8px;">
+                <span class="badge" style="background:#e0f2fe; color:#154360;" id="badge-matriculados">Matriculados: 0</span>
+                <span class="badge badge-verde" id="badge-lancados">Lançados: 0</span>
+                <span class="badge badge-vermelho" id="badge-pendentes">Pendentes: 0</span>
+              </div>
             </div>
+
             <div style="overflow-x:auto;">
               <table>
                 <thead>
@@ -182,6 +193,7 @@
             </div>
             <div id="lancamento-turma-msg" style="font-size:13px;margin-top:10px;min-height:18px;font-weight:600;"></div>
           </div>
+          
           <div id="lancamento-vazio" style="text-align:center;padding:40px;color:var(--text-light);font-size:14px;">
             Selecione escola, série e turma para carregar os alunos.
           </div>
@@ -214,26 +226,61 @@
       </div>
 
       <div id="secao-admin" class="oculto">
-        <div class="admin-card">
-          <div class="admin-titulo">⚙️ Painel Administrativo</div>
-          <div class="admin-sub">Apenas o administrador tem acesso a esta seção.</div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:16px;">Usuários do Sistema</div>
-          <div>
-            <div class="usuario-item"><div class="usuario-info"><strong>Jane</strong><small>jane@sarem.com — Coordenadora 4º e 5º ano</small></div><span class="badge badge-verde">Ativo</span></div>
-            <div class="usuario-item"><div class="usuario-info"><strong>Márcia</strong><small>marcia@sarem.com — Coordenadora 2º ano</small></div><span class="badge badge-verde">Ativo</span></div>
-            <div class="usuario-item"><div class="usuario-info"><strong>Wellita</strong><small>wellita@sarem.com — Coordenadora 3º ano</small></div><span class="badge badge-verde">Ativo</span></div>
-            <div class="usuario-item"><div class="usuario-info"><strong>Administrador</strong><small>admin@sarem.com — Acesso total</small></div><span class="badge badge-amarelo">Admin</span></div>
+        <div class="graficos-grid">
+          
+          <div class="admin-card" style="margin-bottom: 0;">
+            <div class="admin-titulo">👥 Gerenciamento de Usuários</div>
+            <div class="admin-sub">Controle de acesso ao sistema.</div>
+            <div id="lista-usuarios-admin">
+              <div class="usuario-item"><div class="usuario-info"><strong>Jane</strong><small>jane@sarem.com — Coordenadora 4º e 5º ano</small></div><span class="badge badge-verde">Ativo</span></div>
+              <div class="usuario-item"><div class="usuario-info"><strong>Márcia</strong><small>marcia@sarem.com — Coordenadora 2º ano</small></div><span class="badge badge-verde">Ativo</span></div>
+              <div class="usuario-item"><div class="usuario-info"><strong>Wellita</strong><small>wellita@sarem.com — Coordenadora 3º ano</small></div><span class="badge badge-verde">Ativo</span></div>
+              <div class="usuario-item"><div class="usuario-info"><strong>Administrador</strong><small>admin@sarem.com — Acesso total</small></div><span class="badge badge-amarelo">Admin</span></div>
+            </div>
+            <button class="btn btn-sm btn-primary" style="margin-top: 10px;" id="btn-novo-usuario" disabled>+ Novo Usuário (Em breve)</button>
           </div>
-          <div style="margin-top:28px;">
-            <div style="font-size:15px;font-weight:700;margin-bottom:16px;">Gerenciamento de Dados</div>
-            <button class="btn btn-danger" id="btn-limpar-tudo">🗑️ Limpar Todos os Registros</button>
-            <p style="font-size:12px;color:var(--text-light);margin-top:8px;">⚠️ Esta ação é irreversível.</p>
+
+          <div class="admin-card" style="margin-bottom: 0;">
+            <div class="admin-titulo">🔄 Transferência de Aluno</div>
+            <div class="admin-sub">Mova um aluno de turma ou escola.</div>
+            <div class="form-group">
+              <label>Nome do Aluno (Exato)</label>
+              <input type="text" id="admin-transfer-nome" placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group">
+              <label>Nova Escola</label>
+              <select id="admin-transfer-escola"><option value="">Selecione...</option></select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <div class="form-group" style="flex:1">
+                <label>Nova Série</label>
+                <select id="admin-transfer-serie">
+                  <option value="1º Ano">1º Ano</option><option value="2º Ano">2º Ano</option><option value="3º Ano">3º Ano</option><option value="4º Ano">4º Ano</option><option value="5º Ano">5º Ano</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>Nova Turma</label>
+                <input type="text" id="admin-transfer-turma" placeholder="Ex: A">
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btn-transferir-aluno" style="width: 100%;">Transferir Aluno</button>
           </div>
+          
         </div>
+
+        <div class="admin-card" style="max-width: 100%; margin-top: 24px;">
+          <div class="admin-titulo">⚠️ Zona de Perigo</div>
+          <div class="admin-sub">Ações irreversíveis no banco de dados.</div>
+          <button class="btn btn-danger" id="btn-limpar-tudo">🗑️ Limpar Todos os Registros do Sistema</button>
+          <p style="font-size:12px;color:var(--text-light);margin-top:8px;">Apaga todas as notas, mas não exclui os alunos cadastrados.</p>
+        </div>
+
       </div>
 
     </main>
   </div>
+
+  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
   <script src="app.js"></script>
 </body>
