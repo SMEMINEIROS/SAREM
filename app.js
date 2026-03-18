@@ -82,8 +82,17 @@ auth.onAuthStateChanged(user => {
     document.getElementById("pagina-app").classList.remove("oculto");
     document.getElementById("header-usuario").textContent = user.email;
     
+    // CORREÇÃO: Controle rigoroso da Aba Admin
     if (user.email === ADMINEMAIL) {
       document.getElementById("btn-admin").classList.remove("oculto");
+    } else {
+      // Força ocultar se não for admin
+      document.getElementById("btn-admin").classList.add("oculto");
+      // Se a pessoa estiver na aba admin sem querer, joga pro dashboard
+      document.getElementById("secao-admin").classList.add("oculto");
+      document.getElementById("secao-dashboard").classList.remove("oculto");
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("ativo"));
+      document.querySelector('[data-secao="dashboard"]').classList.add("ativo");
     }
     
     // Inicia os carregamentos dinâmicos
@@ -138,7 +147,6 @@ async function carregarEscolas() {
     const snap = await db.collection("escolas").orderBy("nome").get();
     
     if (snap.empty) {
-      // Se banco estiver vazio, carrega lista padrão e salva no banco
       const padroes = ["EM Comecinho de Vida", "EM Dom Bosco", "EM Elias Carrijo de Sousa", "EM Maria Aparecida Almeida Paniago", "EM Maria Eduarda Condinho Filgueiras", "EM Otalécio Alves Irineu", "EM Padre Maximinio", "EM Professor Juarez Távora de Carvalho", "Escola Municipal Professor Salviano Neves Amorim", "EM Santo Antônio", "EM Tonico Corredeira"];
       const batch = db.batch();
       padroes.forEach(e => batch.set(db.collection("escolas").doc(), { nome: e }));
@@ -241,10 +249,10 @@ document.getElementById("btn-aplicar-filtros").addEventListener("click", () => {
   const aval   = document.getElementById("filtro-avaliadora").value;
   const per    = document.getElementById("filtro-periodo").value;
   
-  paginaAtual = 1; // Reseta para primeira página
+  paginaAtual = 1; 
   
   registrosFiltrados = todosRegistros.filter(r => {
-    const rAno = r.ano || "2026"; // Fallback para registros antigos sem ano
+    const rAno = r.ano || "2026";
     return (!ano    || rAno === ano) &&
            (!escola || r.escola === escola) &&
            (!serie  || r.serie  === serie)  &&
@@ -259,7 +267,7 @@ document.getElementById("btn-limpar-filtros").addEventListener("click", () => {
   ["filtro-escola", "filtro-serie", "filtro-turma", "filtro-avaliadora", "filtro-periodo"].forEach(id => {
     document.getElementById(id).value = "";
   });
-  document.getElementById("filtro-ano").value = "2026"; // Restaura o padrão
+  document.getElementById("filtro-ano").value = "2026"; 
   
   paginaAtual = 1;
   registrosFiltrados = todosRegistros.filter(r => (r.ano || "2026") === "2026");
@@ -271,7 +279,6 @@ document.getElementById("btn-pesquisa").addEventListener("click", () => {
   paginaAtual = 1;
   
   if (!termo) { 
-    // Volta pro filtro atual
     document.getElementById("btn-aplicar-filtros").click();
     return; 
   }
@@ -289,7 +296,7 @@ document.getElementById("btn-pesquisa").addEventListener("click", () => {
 
 document.getElementById("btn-limpar-pesquisa").addEventListener("click", () => {
   document.getElementById("pesquisa-geral").value = "";
-  document.getElementById("btn-aplicar-filtros").click(); // reaplica os combos
+  document.getElementById("btn-aplicar-filtros").click(); 
 });
 
 document.getElementById("pesquisa-geral").addEventListener("keydown", e => {
@@ -385,7 +392,6 @@ function renderizarTabela(dados, mostrar) {
   if (!mostrar) { if (card) card.classList.add("oculto"); return; }
   if (card) card.classList.remove("oculto");
   
-  // Filtra só os que realmente tem nota para a tabela
   const comNota = dados.filter(r => r.notaPort != null);
   if (count) count.textContent = comNota.length + " aluno(s)";
   
@@ -400,17 +406,14 @@ function renderizarTabela(dados, mostrar) {
   document.getElementById("tabela-dados").classList.remove("oculto");
   divPaginacao.classList.remove("oculto");
 
-  // Matemática da Paginação
   const totalPaginas = Math.ceil(comNota.length / itensPorPagina) || 1;
   if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
   
   document.getElementById("texto-paginacao").textContent = `Página ${paginaAtual} de ${totalPaginas}`;
   
-  // Habilita/Desabilita Botões
   document.getElementById('btn-pagina-anterior').disabled = (paginaAtual === 1);
   document.getElementById('btn-pagina-proxima').disabled = (paginaAtual === totalPaginas);
   
-  // Fatiar Array
   const inicio = (paginaAtual - 1) * itensPorPagina;
   const fim = inicio + itensPorPagina;
   const fatia = comNota.slice(inicio, fim);
@@ -482,7 +485,7 @@ document.getElementById('btn-exportar-excel').addEventListener('click', () => {
 });
 
 // ==========================================
-// LANÇAMENTO DE NOTAS (LÓGICA CORE)
+// LANÇAMENTO DE NOTAS 
 // ==========================================
 document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
 document.getElementById("l-serie").addEventListener("change", carregarTurmasLancamento);
@@ -773,7 +776,6 @@ document.getElementById('btn-adicionar-escola').addEventListener('click', async 
   }
 });
 
-// Modais
 document.getElementById('btn-abrir-modal-usuario').addEventListener('click', () => {
   document.getElementById('modal-novo-usuario').classList.remove('oculto');
 });
@@ -811,8 +813,6 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
 // ==========================================
 // ADMIN: TRANSFERÊNCIA INTELIGENTE DE ALUNOS
 // ==========================================
-
-// Fluxo de Origem (CASCATA)
 document.getElementById('admin-origem-escola').addEventListener('change', async (e) => {
   const esc = e.target.value;
   const selSerie = document.getElementById('admin-origem-serie');
@@ -874,19 +874,16 @@ document.getElementById('admin-origem-turma').addEventListener('change', async (
   selAluno.disabled = false;
 });
 
-// Ativa o botão de transferência ao escolher o aluno
 document.getElementById('admin-origem-aluno').addEventListener('change', (e) => {
   document.getElementById('btn-transferir-aluno').disabled = !e.target.value;
 });
 
-// Botão de Transferir
 document.getElementById('btn-transferir-aluno').addEventListener('click', async () => {
   const btn = document.getElementById('btn-transferir-aluno');
   
-  // Coleta dados
   const alunoSelect = document.getElementById('admin-origem-aluno');
   const alunoId = alunoSelect.value;
-  const alunoNome = alunoSelect.options[alunoSelect.selectedIndex].text; // Pega o nome no texto do select
+  const alunoNome = alunoSelect.options[alunoSelect.selectedIndex].text; 
 
   const novaEscola = document.getElementById('admin-destino-escola').value;
   const novaSerie = document.getElementById('admin-destino-serie').value;
@@ -902,11 +899,9 @@ document.getElementById('btn-transferir-aluno').addEventListener('click', async 
   try {
     const batch = db.batch();
     
-    // 1. Atualiza o cadastro mestre do aluno (pelo ID)
     const alunoRef = db.collection("alunos").doc(alunoId);
     batch.update(alunoRef, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
 
-    // 2. Atualiza todos os registros de notas desse aluno para refletir o novo local
     const regSnap = await db.collection("registros").where("aluno", "==", alunoNome).get();
     regSnap.docs.forEach(doc => {
         batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
@@ -915,7 +910,6 @@ document.getElementById('btn-transferir-aluno').addEventListener('click', async 
     await batch.commit();
     showToast(`O aluno(a) ${alunoNome} foi transferido!`, "success");
     
-    // Reseta o painel
     document.getElementById('admin-origem-escola').value = "";
     document.getElementById('admin-origem-serie').innerHTML = '<option value="">Aguardando escola...</option>';
     document.getElementById('admin-origem-turma').innerHTML = '<option value="">Aguardando série...</option>';
@@ -927,7 +921,6 @@ document.getElementById('btn-transferir-aluno').addEventListener('click', async 
     showToast("Erro ao processar transferência.", "error");
   } finally {
     btn.textContent = "Realizar Transferência";
-    // Deixa desabilitado porque resetamos o formulário
   }
 });
 
