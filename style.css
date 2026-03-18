@@ -504,7 +504,7 @@ tbody td {
 }
 
 /* ==========================================
-   CARDS ESPECIAUX (LANÇAMENTO E ADMIN)
+   CARDS ESPECIAIS (LANÇAMENTO E ADMIN)
    ========================================== */
 .lancamento-card {
   background: var(--card);
@@ -574,13 +574,6 @@ tbody td {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-/* ==========================================
-   TOAST NOTIFICATIONS (No JavaScript)
-   ========================================== */
-#toast-container {
-  pointer-events: none; /* Permite clicar através do container */
 }
 
 /* ==========================================
