@@ -27,7 +27,7 @@ let ESCOLAS_DINAMICAS = [];
 
 // Controle de Paginação
 let paginaAtual = 1;
-const itensPorPagina = 50;
+const itensPorPagina = 15;
 
 // ==========================================
 // FUNÇÕES UTILITÁRIAS E UI
