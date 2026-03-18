@@ -15,7 +15,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ==========================================
-// VARIÁVEIS GLOBAIS
+// VARIÁVEIS GLOBAIS E ESTADOS
 // ==========================================
 const ADMINEMAIL = "admin@sarem.com";
 let usuarioAtual = null;
@@ -23,20 +23,19 @@ let todosRegistros = [];
 let registrosFiltrados = [];
 let charts = {};
 let alunosTurmaAtual = [];
-let ESCOLAS_DINAMICAS = []; // Agora vem do banco de dados
+let ESCOLAS_DINAMICAS = []; 
 
-// Variáveis de Paginação
+// Controle de Paginação
 let paginaAtual = 1;
 const itensPorPagina = 50;
 
 // ==========================================
-// FUNÇÕES UTILITÁRIAS
+// FUNÇÕES UTILITÁRIAS E UI
 // ==========================================
 function arred(n) {
   return (Math.round(n * 10) / 10).toFixed(1);
 }
 
-// Sistema de Notificações Toast
 function showToast(mensagem, tipo = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -74,7 +73,7 @@ function renderChart(id, type, labels, datasets) {
 }
 
 // ==========================================
-// AUTENTICAÇÃO E LOGIN
+// AUTENTICAÇÃO E INICIALIZAÇÃO
 // ==========================================
 auth.onAuthStateChanged(user => {
   if (user) {
@@ -87,6 +86,7 @@ auth.onAuthStateChanged(user => {
       document.getElementById("btn-admin").classList.remove("oculto");
     }
     
+    // Inicia os carregamentos dinâmicos
     carregarEscolas();
     carregarUsuariosAdmin();
     carregarRegistros();
@@ -131,26 +131,30 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 });
 
 // ==========================================
-// CARREGAMENTO DINÂMICO (ESCOLAS E USUÁRIOS)
+// DADOS DINÂMICOS (ESCOLAS E USUÁRIOS)
 // ==========================================
 async function carregarEscolas() {
-  const snap = await db.collection("escolas").orderBy("nome").get();
-  
-  if (snap.empty) {
-    // Se for a primeira vez, insere as escolas padrões que você já tinha
-    const padroes = ["EM Comecinho de Vida", "EM Dom Bosco", "EM Elias Carrijo de Sousa", "EM Maria Aparecida Almeida Paniago", "EM Maria Eduarda Condinho Filgueiras", "EM Otalécio Alves Irineu", "EM Padre Maximinio", "EM Professor Juarez Távora de Carvalho", "Escola Municipal Professor Salviano Neves Amorim", "EM Santo Antônio", "EM Tonico Corredeira"];
-    const batch = db.batch();
-    padroes.forEach(e => batch.set(db.collection("escolas").doc(), { nome: e }));
-    await batch.commit();
-    ESCOLAS_DINAMICAS = padroes.sort();
-  } else {
-    ESCOLAS_DINAMICAS = snap.docs.map(d => d.data().nome);
+  try {
+    const snap = await db.collection("escolas").orderBy("nome").get();
+    
+    if (snap.empty) {
+      // Se banco estiver vazio, carrega lista padrão e salva no banco
+      const padroes = ["EM Comecinho de Vida", "EM Dom Bosco", "EM Elias Carrijo de Sousa", "EM Maria Aparecida Almeida Paniago", "EM Maria Eduarda Condinho Filgueiras", "EM Otalécio Alves Irineu", "EM Padre Maximinio", "EM Professor Juarez Távora de Carvalho", "Escola Municipal Professor Salviano Neves Amorim", "EM Santo Antônio", "EM Tonico Corredeira"];
+      const batch = db.batch();
+      padroes.forEach(e => batch.set(db.collection("escolas").doc(), { nome: e }));
+      await batch.commit();
+      ESCOLAS_DINAMICAS = padroes.sort();
+    } else {
+      ESCOLAS_DINAMICAS = snap.docs.map(d => d.data().nome);
+    }
+    popularSelectsEscolas();
+  } catch(e) {
+    console.error("Erro ao carregar escolas", e);
   }
-  popularSelectsEscolas();
 }
 
 function popularSelectsEscolas() {
-  ["filtro-escola", "l-escola", "comp-escola", "admin-transfer-escola"].forEach(id => {
+  ["filtro-escola", "l-escola", "comp-escola", "admin-origem-escola", "admin-destino-escola"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const primeira = el.options[0] ? el.options[0].outerHTML : "<option value=''>Selecione...</option>";
@@ -167,23 +171,27 @@ async function carregarUsuariosAdmin() {
   const lista = document.getElementById("lista-usuarios-admin");
   if (!lista) return;
   
-  const snap = await db.collection("usuarios").orderBy("nome").get();
-  lista.innerHTML = "";
-  
-  if (snap.empty) {
-    lista.innerHTML = `<p style="font-size:13px; color:var(--text-light); text-align:center;">Nenhum usuário cadastrado via painel. Apenas o Admin padrão está ativo.</p>`;
-    return;
+  try {
+    const snap = await db.collection("usuarios").orderBy("nome").get();
+    lista.innerHTML = "";
+    
+    if (snap.empty) {
+      lista.innerHTML = `<p style="font-size:13px; color:var(--text-light); text-align:center; padding: 10px;">Nenhum usuário extra cadastrado no banco. Apenas o Admin principal (${ADMINEMAIL}) está ativo.</p>`;
+      return;
+    }
+    
+    snap.docs.forEach(doc => {
+      const u = doc.data();
+      const badge = u.cargo === 'admin' ? '<span class="badge badge-amarelo">Admin</span>' : '<span class="badge badge-verde">Avaliador</span>';
+      lista.innerHTML += `
+        <div class="usuario-item">
+          <div class="usuario-info"><strong>${u.nome}</strong><small>${u.email}</small></div>
+          ${badge}
+        </div>`;
+    });
+  } catch(e) {
+    lista.innerHTML = `<p style="font-size:13px; color:var(--danger); text-align:center;">Erro ao carregar usuários. Verifique permissões.</p>`;
   }
-  
-  snap.docs.forEach(doc => {
-    const u = doc.data();
-    const badge = u.cargo === 'admin' ? '<span class="badge badge-amarelo">Admin</span>' : '<span class="badge badge-verde">Avaliador</span>';
-    lista.innerHTML += `
-      <div class="usuario-item">
-        <div class="usuario-info"><strong>${u.nome}</strong><small>${u.email}</small></div>
-        ${badge}
-      </div>`;
-  });
 }
 
 function carregarRegistros() {
@@ -233,10 +241,10 @@ document.getElementById("btn-aplicar-filtros").addEventListener("click", () => {
   const aval   = document.getElementById("filtro-avaliadora").value;
   const per    = document.getElementById("filtro-periodo").value;
   
-  paginaAtual = 1; // Reseta a paginação ao filtrar
+  paginaAtual = 1; // Reseta para primeira página
   
   registrosFiltrados = todosRegistros.filter(r => {
-    const rAno = r.ano || "2026"; // Fallback para dados antigos
+    const rAno = r.ano || "2026"; // Fallback para registros antigos sem ano
     return (!ano    || rAno === ano) &&
            (!escola || r.escola === escola) &&
            (!serie  || r.serie  === serie)  &&
@@ -245,26 +253,28 @@ document.getElementById("btn-aplicar-filtros").addEventListener("click", () => {
            (!per    || r.periodo === per);
   });
   atualizarDashboard(registrosFiltrados);
-  renderizarTabela(registrosFiltrados, true);
 });
 
 document.getElementById("btn-limpar-filtros").addEventListener("click", () => {
   ["filtro-escola", "filtro-serie", "filtro-turma", "filtro-avaliadora", "filtro-periodo"].forEach(id => {
     document.getElementById(id).value = "";
   });
-  document.getElementById("filtro-ano").value = "2026"; // Volta pro padrão
+  document.getElementById("filtro-ano").value = "2026"; // Restaura o padrão
   
   paginaAtual = 1;
-  registrosFiltrados = todosRegistros.slice();
+  registrosFiltrados = todosRegistros.filter(r => (r.ano || "2026") === "2026");
   atualizarDashboard(registrosFiltrados);
-  renderizarTabela(registrosFiltrados, false);
 });
 
 document.getElementById("btn-pesquisa").addEventListener("click", () => {
   const termo = document.getElementById("pesquisa-geral").value.toLowerCase().trim();
   paginaAtual = 1;
   
-  if (!termo) { registrosFiltrados = todosRegistros.slice(); atualizarDashboard(registrosFiltrados); return; }
+  if (!termo) { 
+    // Volta pro filtro atual
+    document.getElementById("btn-aplicar-filtros").click();
+    return; 
+  }
   
   registrosFiltrados = todosRegistros.filter(r => {
     const rAno = r.ano || "2026";
@@ -275,15 +285,11 @@ document.getElementById("btn-pesquisa").addEventListener("click", () => {
            (rAno).includes(termo);
   });
   atualizarDashboard(registrosFiltrados);
-  renderizarTabela(registrosFiltrados, true);
 });
 
 document.getElementById("btn-limpar-pesquisa").addEventListener("click", () => {
   document.getElementById("pesquisa-geral").value = "";
-  paginaAtual = 1;
-  registrosFiltrados = todosRegistros.slice();
-  atualizarDashboard(registrosFiltrados);
-  renderizarTabela(registrosFiltrados, false);
+  document.getElementById("btn-aplicar-filtros").click(); // reaplica os combos
 });
 
 document.getElementById("pesquisa-geral").addEventListener("keydown", e => {
@@ -302,9 +308,9 @@ function atualizarDashboard(dados) {
   document.getElementById("card-media-mat").textContent = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   
-  renderizarTabela(dados, false); 
   renderizarTop3(comNota);
   renderizarPizzas(comNota);
+  renderizarTabela(dados, true); 
 }
 
 function renderizarTop3(dados) {
@@ -366,7 +372,7 @@ function renderizarPizzas(dados) {
 }
 
 // ==========================================
-// RENDERIZAR TABELA COM PAGINAÇÃO
+// TABELA E PAGINAÇÃO
 // ==========================================
 function renderizarTabela(dados, mostrar) {
   const card = document.getElementById("card-resultados");
@@ -379,24 +385,32 @@ function renderizarTabela(dados, mostrar) {
   if (!mostrar) { if (card) card.classList.add("oculto"); return; }
   if (card) card.classList.remove("oculto");
   
+  // Filtra só os que realmente tem nota para a tabela
   const comNota = dados.filter(r => r.notaPort != null);
   if (count) count.textContent = comNota.length + " aluno(s)";
   
   if (comNota.length === 0) { 
     vazio.classList.remove("oculto"); 
     divPaginacao.classList.add("oculto");
+    document.getElementById("tabela-dados").classList.add("oculto");
     return; 
   }
   
   vazio.classList.add("oculto");
+  document.getElementById("tabela-dados").classList.remove("oculto");
   divPaginacao.classList.remove("oculto");
 
-  // Lógica de Paginação
-  const totalPaginas = Math.ceil(comNota.length / itensPorPagina);
+  // Matemática da Paginação
+  const totalPaginas = Math.ceil(comNota.length / itensPorPagina) || 1;
   if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
   
   document.getElementById("texto-paginacao").textContent = `Página ${paginaAtual} de ${totalPaginas}`;
   
+  // Habilita/Desabilita Botões
+  document.getElementById('btn-pagina-anterior').disabled = (paginaAtual === 1);
+  document.getElementById('btn-pagina-proxima').disabled = (paginaAtual === totalPaginas);
+  
+  // Fatiar Array
   const inicio = (paginaAtual - 1) * itensPorPagina;
   const fim = inicio + itensPorPagina;
   const fatia = comNota.slice(inicio, fim);
@@ -436,14 +450,13 @@ document.getElementById('btn-pagina-proxima').addEventListener('click', () => {
 });
 
 // ==========================================
-// EXPORTAR PARA EXCEL
+// EXPORTAR EXCEL
 // ==========================================
 document.getElementById('btn-exportar-excel').addEventListener('click', () => {
   if (registrosFiltrados.length === 0) { 
     showToast("Não há dados para exportar. Aplique um filtro.", "error"); 
     return; 
   }
-  
   showToast("Gerando planilha...", "info");
   
   const dadosExportacao = registrosFiltrados
@@ -464,13 +477,12 @@ document.getElementById('btn-exportar-excel').addEventListener('click', () => {
   const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Resultados SAREM");
-  
   XLSX.writeFile(workbook, "Resultados_SAREM.xlsx");
   showToast("Planilha exportada com sucesso!", "success");
 });
 
 // ==========================================
-// LANÇAMENTO DE NOTAS (COM BATCH E ANO)
+// LANÇAMENTO DE NOTAS (LÓGICA CORE)
 // ==========================================
 document.getElementById("l-escola").addEventListener("change", carregarSeriesLancamento);
 document.getElementById("l-serie").addEventListener("change", carregarTurmasLancamento);
@@ -487,13 +499,8 @@ function carregarSeriesLancamento() {
   if (!escola) return;
   
   db.collection("alunos").where("escola", "==", escola).where("ativo", "==", true).get().then(snap => {
-    const series = [];
-    snap.docs.forEach(d => { const s = d.data().serie; if (!series.includes(s)) series.push(s); });
-    series.sort().forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s; opt.textContent = s;
-      selSerie.appendChild(opt);
-    });
+    const series = [...new Set(snap.docs.map(d => d.data().serie))].sort();
+    series.forEach(s => selSerie.innerHTML += `<option value="${s}">${s}</option>`);
   });
 }
 
@@ -505,13 +512,8 @@ function carregarTurmasLancamento() {
   if (!escola || !serie) return;
   
   db.collection("alunos").where("escola", "==", escola).where("serie", "==", serie).where("ativo", "==", true).get().then(snap => {
-    const turmas = [];
-    snap.docs.forEach(d => { const t = d.data().turma; if (!turmas.includes(t)) turmas.push(t); });
-    turmas.sort().forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t; opt.textContent = t;
-      selTurma.appendChild(opt);
-    });
+    const turmas = [...new Set(snap.docs.map(d => d.data().turma))].sort();
+    turmas.forEach(t => selTurma.innerHTML += `<option value="${t}">${t}</option>`);
   });
 }
 
@@ -528,13 +530,12 @@ function carregarAlunosTurma() {
 
   db.collection("alunos").where("escola", "==", escola).where("serie", "==", serie).where("turma", "==", turma).where("ativo", "==", true).get().then(alunosSnap => {
     if (alunosSnap.empty) {
-      vazio.textContent = "Nenhum aluno encontrado para essa turma.";
+      vazio.textContent = "Nenhum aluno matriculado nesta turma.";
       wrapper.classList.add("oculto");
       vazio.classList.remove("oculto");
       return;
     }
     
-    // Busca registros cruzando a escola, periodo E o ANO
     db.collection("registros").where("escola", "==", escola).where("periodo", "==", periodo).get().then(regSnap => {
       const nomesDaTurma = new Set(alunosSnap.docs.map(d => d.data().nome));
       const regPorNome = {};
@@ -561,7 +562,7 @@ function carregarAlunosTurma() {
       }).sort((a, b) => a.nome.localeCompare(b.nome));
 
       const periodLabel = periodo === "inicial" ? "Diagnóstico Inicial" : "Diagnóstico Final";
-      document.getElementById("lancamento-turma-titulo").textContent = `(${ano}) ${escola} — ${serie} / ${turma} — ${periodLabel}`;
+      document.getElementById("lancamento-turma-titulo").textContent = `[${ano}] ${escola} — ${serie} / ${turma} — ${periodLabel}`;
       
       atualizarContadoresLancamento();
 
@@ -702,7 +703,7 @@ async function salvarTurmaBatch() {
     carregarAlunosTurma(); 
   } catch (error) {
     console.error("Erro ao salvar:", error);
-    showToast("Erro ao comunicar com o servidor.", "error");
+    showToast("Erro ao conectar com o banco.", "error");
   } finally {
     btn.textContent = "💾 Salvar Todas as Notas";
     btn.disabled = false;
@@ -755,10 +756,8 @@ document.getElementById("btn-gerar-comparativo").addEventListener("click", () =>
 });
 
 // ==========================================
-// ADMIN (Usuários, Escolas e Transferência)
+// ADMIN: ESCOLAS E USUÁRIOS
 // ==========================================
-
-// Adicionar Escola
 document.getElementById('btn-adicionar-escola').addEventListener('click', async () => {
   const input = document.getElementById('admin-nova-escola');
   const nome = input.value.trim();
@@ -768,13 +767,13 @@ document.getElementById('btn-adicionar-escola').addEventListener('click', async 
     await db.collection("escolas").add({ nome });
     showToast("Escola adicionada com sucesso!", "success");
     input.value = "";
-    carregarEscolas(); // Recarrega todas as listas
+    carregarEscolas();
   } catch(e) {
     showToast("Erro ao adicionar escola.", "error");
   }
 });
 
-// Modal Novo Usuário
+// Modais
 document.getElementById('btn-abrir-modal-usuario').addEventListener('click', () => {
   document.getElementById('modal-novo-usuario').classList.remove('oculto');
 });
@@ -799,7 +798,6 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
     document.getElementById('modal-novo-usuario').classList.add('oculto');
     carregarUsuariosAdmin();
     
-    // Limpa campos
     document.getElementById('modal-user-nome').value = "";
     document.getElementById('modal-user-email').value = "";
   } catch(e) {
@@ -810,55 +808,132 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
   }
 });
 
-// Transferência de Aluno
+// ==========================================
+// ADMIN: TRANSFERÊNCIA INTELIGENTE DE ALUNOS
+// ==========================================
+
+// Fluxo de Origem (CASCATA)
+document.getElementById('admin-origem-escola').addEventListener('change', async (e) => {
+  const esc = e.target.value;
+  const selSerie = document.getElementById('admin-origem-serie');
+  const selTurma = document.getElementById('admin-origem-turma');
+  const selAluno = document.getElementById('admin-origem-aluno');
+
+  selSerie.innerHTML = '<option value="">Carregando...</option>';
+  selSerie.disabled = true; selTurma.disabled = true; selAluno.disabled = true;
+  document.getElementById('btn-transferir-aluno').disabled = true;
+
+  if(!esc) { selSerie.innerHTML = '<option value="">Aguardando escola...</option>'; return; }
+
+  const snap = await db.collection("alunos").where("escola", "==", esc).where("ativo", "==", true).get();
+  const series = [...new Set(snap.docs.map(d => d.data().serie))].sort();
+
+  selSerie.innerHTML = '<option value="">Selecione a Série...</option>';
+  series.forEach(s => selSerie.innerHTML += `<option value="${s}">${s}</option>`);
+  selSerie.disabled = false;
+});
+
+document.getElementById('admin-origem-serie').addEventListener('change', async (e) => {
+  const serie = e.target.value;
+  const escola = document.getElementById('admin-origem-escola').value;
+  const selTurma = document.getElementById('admin-origem-turma');
+  const selAluno = document.getElementById('admin-origem-aluno');
+
+  selTurma.innerHTML = '<option value="">Carregando...</option>';
+  selTurma.disabled = true; selAluno.disabled = true;
+  document.getElementById('btn-transferir-aluno').disabled = true;
+
+  if(!serie) return;
+
+  const snap = await db.collection("alunos").where("escola", "==", escola).where("serie", "==", serie).where("ativo", "==", true).get();
+  const turmas = [...new Set(snap.docs.map(d => d.data().turma))].sort();
+
+  selTurma.innerHTML = '<option value="">Selecione a Turma...</option>';
+  turmas.forEach(t => selTurma.innerHTML += `<option value="${t}">${t}</option>`);
+  selTurma.disabled = false;
+});
+
+document.getElementById('admin-origem-turma').addEventListener('change', async (e) => {
+  const turma = e.target.value;
+  const escola = document.getElementById('admin-origem-escola').value;
+  const serie = document.getElementById('admin-origem-serie').value;
+  const selAluno = document.getElementById('admin-origem-aluno');
+
+  selAluno.innerHTML = '<option value="">Carregando alunos...</option>';
+  selAluno.disabled = true;
+  document.getElementById('btn-transferir-aluno').disabled = true;
+
+  if(!turma) return;
+
+  const snap = await db.collection("alunos").where("escola", "==", escola).where("serie", "==", serie).where("turma", "==", turma).where("ativo", "==", true).get();
+  
+  const alunos = snap.docs.map(d => ({ id: d.id, nome: d.data().nome })).sort((a, b) => a.nome.localeCompare(b.nome));
+
+  selAluno.innerHTML = '<option value="">Selecione o Aluno...</option>';
+  alunos.forEach(a => selAluno.innerHTML += `<option value="${a.id}">${a.nome}</option>`);
+  selAluno.disabled = false;
+});
+
+// Ativa o botão de transferência ao escolher o aluno
+document.getElementById('admin-origem-aluno').addEventListener('change', (e) => {
+  document.getElementById('btn-transferir-aluno').disabled = !e.target.value;
+});
+
+// Botão de Transferir
 document.getElementById('btn-transferir-aluno').addEventListener('click', async () => {
   const btn = document.getElementById('btn-transferir-aluno');
-  const nome = document.getElementById('admin-transfer-nome').value.trim().toUpperCase();
-  const novaEscola = document.getElementById('admin-transfer-escola').value;
-  const novaSerie = document.getElementById('admin-transfer-serie').value;
-  const novaTurma = document.getElementById('admin-transfer-turma').value.trim().toUpperCase();
+  
+  // Coleta dados
+  const alunoSelect = document.getElementById('admin-origem-aluno');
+  const alunoId = alunoSelect.value;
+  const alunoNome = alunoSelect.options[alunoSelect.selectedIndex].text; // Pega o nome no texto do select
 
-  if(!nome || !novaEscola || !novaSerie || !novaTurma) {
-    return showToast("Preencha todos os campos da transferência.", "error"); 
+  const novaEscola = document.getElementById('admin-destino-escola').value;
+  const novaSerie = document.getElementById('admin-destino-serie').value;
+  const novaTurma = document.getElementById('admin-destino-turma').value.trim().toUpperCase();
+
+  if(!alunoId || !novaEscola || !novaSerie || !novaTurma) {
+    return showToast("Preencha todos os campos do Destino.", "error"); 
   }
 
   btn.textContent = "Transferindo...";
   btn.disabled = true;
 
   try {
-    const alunoSnap = await db.collection("alunos").where("nome", "==", nome).get();
-    if(alunoSnap.empty) { 
-      showToast(`O aluno "${nome}" não foi encontrado. Verifique a grafia.`, "error"); 
-      btn.textContent = "Realizar Transferência";
-      btn.disabled = false;
-      return; 
-    }
-
     const batch = db.batch();
-    alunoSnap.docs.forEach(doc => {
-        batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
-    });
+    
+    // 1. Atualiza o cadastro mestre do aluno (pelo ID)
+    const alunoRef = db.collection("alunos").doc(alunoId);
+    batch.update(alunoRef, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
 
-    const regSnap = await db.collection("registros").where("aluno", "==", nome).get();
+    // 2. Atualiza todos os registros de notas desse aluno para refletir o novo local
+    const regSnap = await db.collection("registros").where("aluno", "==", alunoNome).get();
     regSnap.docs.forEach(doc => {
         batch.update(doc.ref, { escola: novaEscola, serie: novaSerie, turma: novaTurma });
     });
 
     await batch.commit();
-    showToast(`O aluno(a) ${nome} foi transferido com sucesso!`, "success");
+    showToast(`O aluno(a) ${alunoNome} foi transferido!`, "success");
     
-    document.getElementById('admin-transfer-nome').value = "";
-    document.getElementById('admin-transfer-turma').value = "";
+    // Reseta o painel
+    document.getElementById('admin-origem-escola').value = "";
+    document.getElementById('admin-origem-serie').innerHTML = '<option value="">Aguardando escola...</option>';
+    document.getElementById('admin-origem-turma').innerHTML = '<option value="">Aguardando série...</option>';
+    document.getElementById('admin-origem-aluno').innerHTML = '<option value="">Aguardando turma...</option>';
+    document.getElementById('admin-destino-turma').value = "";
+    
   } catch(e) {
-    console.error(e);
-    showToast("Erro ao transferir.", "error");
+    console.error("Erro na transferência:", e);
+    showToast("Erro ao processar transferência.", "error");
   } finally {
     btn.textContent = "Realizar Transferência";
-    btn.disabled = false;
+    // Deixa desabilitado porque resetamos o formulário
   }
 });
 
-// Zona de Perigo
+// ==========================================
+// ADMIN: ZONA DE PERIGO
+// ==========================================
 document.getElementById("btn-limpar-tudo").addEventListener("click", async () => {
   if (!confirm("⚠️ ATENÇÃO: Isso vai apagar TODAS AS NOTAS do sistema.\nOs alunos continuarão cadastrados.\nTem certeza absoluta?")) return;
   
