@@ -59,6 +59,13 @@
         <div class="filtros-card">
           <div class="filtros-titulo">🔍 Filtros</div>
           <div class="filtros-grid">
+            <select id="filtro-ano">
+              <option value="">Todos os Anos</option>
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
             <select id="filtro-escola"><option value="">Todas as Escolas</option></select>
             <select id="filtro-serie">
               <option value="">Todas as Séries</option>
@@ -69,9 +76,7 @@
               <option value="5º Ano">5º Ano</option>
             </select>
             <select id="filtro-turma"><option value="">Todas as Turmas</option></select>
-            <select id="filtro-avaliadora">
-              <option value="">Todas as Avaliadoras</option>
-            </select>
+            <select id="filtro-avaliadora"><option value="">Todas as Avaliadoras</option></select>
             <select id="filtro-periodo">
               <option value="">Ambos os Períodos</option>
               <option value="inicial">Diagnóstico Inicial</option>
@@ -95,25 +100,13 @@
         </div>
 
         <div class="graficos-grid" style="margin-bottom:24px">
-          <div class="grafico-card">
-            <div class="grafico-titulo">🏆 Top 3 Escolas — Português</div>
-            <div id="top3-port"></div>
-          </div>
-          <div class="grafico-card">
-            <div class="grafico-titulo">🏆 Top 3 Escolas — Matemática</div>
-            <div id="top3-mat"></div>
-          </div>
+          <div class="grafico-card"><div class="grafico-titulo">🏆 Top 3 Escolas — Português</div><div id="top3-port"></div></div>
+          <div class="grafico-card"><div class="grafico-titulo">🏆 Top 3 Escolas — Matemática</div><div id="top3-mat"></div></div>
         </div>
 
         <div class="graficos-grid">
-          <div class="grafico-card">
-            <div class="grafico-titulo">📊 Distribuição — Português</div>
-            <div class="grafico-container"><canvas id="grafico-dist-port"></canvas></div>
-          </div>
-          <div class="grafico-card">
-            <div class="grafico-titulo">📊 Distribuição — Matemática</div>
-            <div class="grafico-container"><canvas id="grafico-dist-mat"></canvas></div>
-          </div>
+          <div class="grafico-card"><div class="grafico-titulo">📊 Distribuição — Português</div><div class="grafico-container"><canvas id="grafico-dist-port"></canvas></div></div>
+          <div class="grafico-card"><div class="grafico-titulo">📊 Distribuição — Matemática</div><div class="grafico-container"><canvas id="grafico-dist-mat"></canvas></div></div>
         </div>
 
         <div class="tabela-card oculto" id="card-resultados">
@@ -126,11 +119,17 @@
           </div>
           <div class="tabela-wrapper">
             <table id="tabela-dados">
-              <thead><tr><th>Aluno</th><th>Escola</th><th>Série</th><th>Turma</th><th>Período</th><th>Português</th><th>Matemática</th><th>Média</th></tr></thead>
+              <thead><tr><th>Ano</th><th>Aluno</th><th>Escola</th><th>Série</th><th>Turma</th><th>Período</th><th>Português</th><th>Matemática</th><th>Média</th></tr></thead>
               <tbody id="tabela-corpo"></tbody>
             </table>
           </div>
           <div id="tabela-vazia" style="text-align:center;padding:32px;color:var(--text-light);font-size:14px" class="oculto">Nenhum registro encontrado.</div>
+          
+          <div id="paginacao-resultados" class="oculto" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:20px;">
+            <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-pagina-anterior">⬅️ Anterior</button>
+            <span id="texto-paginacao" style="font-size:14px; font-weight:600; color:var(--text-light);">Página 1 de 1</span>
+            <button class="btn btn-sm" style="background:#ecf0f1;color:var(--text)" id="btn-pagina-proxima">Próxima ➡️</button>
+          </div>
         </div>
       </div>
 
@@ -138,18 +137,27 @@
         <div class="lancamento-card" style="max-width:960px;">
           <div class="lancamento-titulo">✏️ Lançar Notas por Turma</div>
           
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;">
+            <div class="form-group" style="margin:0;">
+              <label>Ano de Aplicação</label>
+              <select id="l-ano">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+              </select>
+            </div>
             <div class="form-group" style="margin:0;">
               <label>Escola</label>
-              <select id="l-escola"><option value="">Selecione a escola...</option></select>
+              <select id="l-escola"><option value="">Selecione...</option></select>
             </div>
             <div class="form-group" style="margin:0;">
               <label>Série</label>
-              <select id="l-serie"><option value="">Selecione a série...</option></select>
+              <select id="l-serie"><option value="">Selecione...</option></select>
             </div>
             <div class="form-group" style="margin:0;">
               <label>Turma</label>
-              <select id="l-turma"><option value="">Selecione a turma...</option></select>
+              <select id="l-turma"><option value="">Selecione...</option></select>
             </div>
             <div class="form-group" style="margin:0;">
               <label>Período</label>
@@ -162,12 +170,10 @@
           <button class="btn btn-primary" id="btn-carregar-alunos" style="margin-bottom:24px;">🔍 Carregar Alunos</button>
 
           <div id="lancamento-tabela-wrapper" class="oculto">
-            
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
               <div style="font-size:14px;font-weight:700;color:var(--primary);" id="lancamento-turma-titulo"></div>
-              
               <div id="status-lancamento" style="display:flex; gap:8px;">
-                <span class="badge" style="background:#e0f2fe; color:#154360;" id="badge-matriculados">Matriculados: 0</span>
+                <span class="badge badge-azul" id="badge-matriculados">Matriculados: 0</span>
                 <span class="badge badge-verde" id="badge-lancados">Lançados: 0</span>
                 <span class="badge badge-vermelho" id="badge-pendentes">Pendentes: 0</span>
               </div>
@@ -189,13 +195,12 @@
             </div>
             <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
               <button class="btn btn-success" id="btn-salvar-turma">💾 Salvar Todas as Notas</button>
-              <button class="btn" style="background:#ecf0f1;color:var(--text);" id="btn-limpar-notas">🗑️ Limpar</button>
+              <button class="btn" style="background:#ecf0f1;color:var(--text);" id="btn-limpar-notas">🗑️ Limpar Formulário</button>
             </div>
-            <div id="lancamento-turma-msg" style="font-size:13px;margin-top:10px;min-height:18px;font-weight:600;"></div>
           </div>
           
           <div id="lancamento-vazio" style="text-align:center;padding:40px;color:var(--text-light);font-size:14px;">
-            Selecione escola, série e turma para carregar os alunos.
+            Selecione o ano, escola, série e turma para carregar os alunos.
           </div>
         </div>
       </div>
@@ -205,6 +210,11 @@
         <div class="filtros-card">
           <div class="filtros-titulo">🔍 Filtros do Comparativo</div>
           <div class="filtros-grid">
+            <select id="comp-ano">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
             <select id="comp-escola"><option value="">Todas as Escolas</option></select>
             <select id="comp-serie">
               <option value="">Todas as Séries</option>
@@ -229,58 +239,92 @@
         <div class="graficos-grid">
           
           <div class="admin-card" style="margin-bottom: 0;">
-            <div class="admin-titulo">👥 Gerenciamento de Usuários</div>
-            <div class="admin-sub">Controle de acesso ao sistema.</div>
-            <div id="lista-usuarios-admin">
-              <div class="usuario-item"><div class="usuario-info"><strong>Jane</strong><small>jane@sarem.com — Coordenadora 4º e 5º ano</small></div><span class="badge badge-verde">Ativo</span></div>
-              <div class="usuario-item"><div class="usuario-info"><strong>Márcia</strong><small>marcia@sarem.com — Coordenadora 2º ano</small></div><span class="badge badge-verde">Ativo</span></div>
-              <div class="usuario-item"><div class="usuario-info"><strong>Wellita</strong><small>wellita@sarem.com — Coordenadora 3º ano</small></div><span class="badge badge-verde">Ativo</span></div>
-              <div class="usuario-item"><div class="usuario-info"><strong>Administrador</strong><small>admin@sarem.com — Acesso total</small></div><span class="badge badge-amarelo">Admin</span></div>
+            <div class="admin-titulo">👥 Usuários do Sistema</div>
+            <div class="admin-sub">Controle quem pode acessar o SAREM.</div>
+            <div id="lista-usuarios-admin" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;">
+              <p style="font-size:13px; color:var(--text-light); text-align:center;">Carregando usuários...</p>
             </div>
-            <button class="btn btn-sm btn-primary" style="margin-top: 10px;" id="btn-novo-usuario" disabled>+ Novo Usuário (Em breve)</button>
+            <button class="btn btn-sm btn-primary" id="btn-abrir-modal-usuario" style="width: 100%;">+ Adicionar Novo Usuário</button>
           </div>
 
           <div class="admin-card" style="margin-bottom: 0;">
-            <div class="admin-titulo">🔄 Transferência de Aluno</div>
-            <div class="admin-sub">Mova um aluno de turma ou escola.</div>
+            <div class="admin-titulo">🏫 Gerenciamento de Escolas</div>
+            <div class="admin-sub">Adicione novas escolas ao sistema.</div>
             <div class="form-group">
-              <label>Nome do Aluno (Exato)</label>
-              <input type="text" id="admin-transfer-nome" placeholder="Ex: João Silva">
+              <label>Nome da Nova Escola</label>
+              <input type="text" id="admin-nova-escola" placeholder="Ex: EM Nova Esperança">
             </div>
-            <div class="form-group">
-              <label>Nova Escola</label>
-              <select id="admin-transfer-escola"><option value="">Selecione...</option></select>
-            </div>
-            <div style="display: flex; gap: 10px;">
-              <div class="form-group" style="flex:1">
-                <label>Nova Série</label>
-                <select id="admin-transfer-serie">
-                  <option value="1º Ano">1º Ano</option><option value="2º Ano">2º Ano</option><option value="3º Ano">3º Ano</option><option value="4º Ano">4º Ano</option><option value="5º Ano">5º Ano</option>
-                </select>
-              </div>
-              <div class="form-group" style="flex:1">
-                <label>Nova Turma</label>
-                <input type="text" id="admin-transfer-turma" placeholder="Ex: A">
-              </div>
-            </div>
-            <button class="btn btn-primary" id="btn-transferir-aluno" style="width: 100%;">Transferir Aluno</button>
+            <button class="btn btn-success" id="btn-adicionar-escola" style="width: 100%;">+ Adicionar Escola</button>
           </div>
-          
         </div>
 
         <div class="admin-card" style="max-width: 100%; margin-top: 24px;">
-          <div class="admin-titulo">⚠️ Zona de Perigo</div>
+          <div class="admin-titulo">🔄 Transferência de Aluno</div>
+          <div class="admin-sub">Mova um aluno de turma ou escola.</div>
+          
+          <div style="display:flex; gap:16px; flex-wrap:wrap;">
+            <div class="form-group" style="flex:2; min-width: 250px;">
+              <label>Nome do Aluno (Exato)</label>
+              <input type="text" id="admin-transfer-nome" placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group" style="flex:2; min-width: 250px;">
+              <label>Nova Escola</label>
+              <select id="admin-transfer-escola"><option value="">Selecione...</option></select>
+            </div>
+            <div class="form-group" style="flex:1; min-width: 120px;">
+              <label>Nova Série</label>
+              <select id="admin-transfer-serie">
+                <option value="1º Ano">1º Ano</option><option value="2º Ano">2º Ano</option><option value="3º Ano">3º Ano</option><option value="4º Ano">4º Ano</option><option value="5º Ano">5º Ano</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1; min-width: 100px;">
+              <label>Nova Turma</label>
+              <input type="text" id="admin-transfer-turma" placeholder="Ex: A">
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-transferir-aluno">Realizar Transferência</button>
+        </div>
+
+        <div class="admin-card" style="max-width: 100%; margin-top: 24px; border: 1px solid var(--danger);">
+          <div class="admin-titulo" style="color:var(--danger)">⚠️ Zona de Perigo</div>
           <div class="admin-sub">Ações irreversíveis no banco de dados.</div>
-          <button class="btn btn-danger" id="btn-limpar-tudo">🗑️ Limpar Todos os Registros do Sistema</button>
-          <p style="font-size:12px;color:var(--text-light);margin-top:8px;">Apaga todas as notas, mas não exclui os alunos cadastrados.</p>
+          <button class="btn btn-danger" id="btn-limpar-tudo">🗑️ Limpar Todos os Registros de Notas</button>
+          <p style="font-size:12px;color:var(--text-light);margin-top:8px;">Apaga todas as notas, mas não exclui os alunos matriculados.</p>
         </div>
 
       </div>
-
     </main>
   </div>
 
-  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+  <div id="modal-novo-usuario" class="oculto" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
+    <div style="background:white; padding:32px; border-radius:16px; width:90%; max-width:420px; box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+      <h3 style="margin-bottom:24px; color:var(--primary); font-size: 20px;">👤 Cadastrar Usuário</h3>
+      
+      <div class="form-group">
+        <label>Nome / Identificação</label>
+        <input type="text" id="modal-user-nome" placeholder="Ex: Ana (Professora)">
+      </div>
+      <div class="form-group">
+        <label>E-mail de Acesso</label>
+        <input type="email" id="modal-user-email" placeholder="ana@sarem.com">
+      </div>
+      <div class="form-group">
+        <label>Nível de Acesso</label>
+        <select id="modal-user-cargo">
+          <option value="avaliador">Avaliador (Apenas lançar/ver notas)</option>
+          <option value="admin">Administrador (Acesso total)</option>
+        </select>
+      </div>
+      
+      <div style="display:flex; gap:12px; margin-top:28px;">
+        <button class="btn btn-success" style="flex:1;" id="btn-salvar-usuario">Salvar</button>
+        <button class="btn" style="flex:1; background:#ecf0f1; color:var(--text);" id="btn-fechar-modal-usuario">Cancelar</button>
+      </div>
+      <p style="font-size:11px; color:var(--text-light); margin-top:16px; text-align:center;">Para que a pessoa consiga acessar, a senha dela precisa ser criada no painel "Authentication" do Firebase.</p>
+    </div>
+  </div>
+
+  <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
 
   <script src="app.js"></script>
 </body>
