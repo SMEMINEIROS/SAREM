@@ -260,29 +260,47 @@
 
         <div class="admin-card" style="max-width: 100%; margin-top: 24px;">
           <div class="admin-titulo">🔄 Transferência de Aluno</div>
-          <div class="admin-sub">Mova um aluno de turma ou escola.</div>
+          <div class="admin-sub">Localize o aluno na turma atual e selecione o novo destino.</div>
           
-          <div style="display:flex; gap:16px; flex-wrap:wrap;">
-            <div class="form-group" style="flex:2; min-width: 250px;">
-              <label>Nome do Aluno (Exato)</label>
-              <input type="text" id="admin-transfer-nome" placeholder="Ex: João Silva">
+          <h4 style="margin-bottom: 12px; color: var(--primary); font-size: 15px;">📍 Origem (Onde o aluno está agora)</h4>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+            <div class="form-group" style="flex:1; min-width: 200px; margin-bottom: 0;">
+              <label>Escola Atual</label>
+              <select id="admin-origem-escola"><option value="">Selecione...</option></select>
             </div>
-            <div class="form-group" style="flex:2; min-width: 250px;">
+            <div class="form-group" style="flex:1; min-width: 120px; margin-bottom: 0;">
+              <label>Série Atual</label>
+              <select id="admin-origem-serie" disabled><option value="">Aguardando escola...</option></select>
+            </div>
+            <div class="form-group" style="flex:1; min-width: 120px; margin-bottom: 0;">
+              <label>Turma Atual</label>
+              <select id="admin-origem-turma" disabled><option value="">Aguardando série...</option></select>
+            </div>
+            <div class="form-group" style="flex:2; min-width: 250px; margin-bottom: 0;">
+              <label>Selecione o Aluno</label>
+              <select id="admin-origem-aluno" disabled><option value="">Aguardando turma...</option></select>
+            </div>
+          </div>
+
+          <h4 style="margin-bottom: 12px; color: var(--success); font-size: 15px;">🎯 Destino (Para onde o aluno vai)</h4>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 20px;">
+            <div class="form-group" style="flex:2; min-width: 250px; margin-bottom: 0;">
               <label>Nova Escola</label>
-              <select id="admin-transfer-escola"><option value="">Selecione...</option></select>
+              <select id="admin-destino-escola"><option value="">Selecione...</option></select>
             </div>
-            <div class="form-group" style="flex:1; min-width: 120px;">
+            <div class="form-group" style="flex:1; min-width: 120px; margin-bottom: 0;">
               <label>Nova Série</label>
-              <select id="admin-transfer-serie">
+              <select id="admin-destino-serie">
                 <option value="1º Ano">1º Ano</option><option value="2º Ano">2º Ano</option><option value="3º Ano">3º Ano</option><option value="4º Ano">4º Ano</option><option value="5º Ano">5º Ano</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1; min-width: 100px;">
+            <div class="form-group" style="flex:1; min-width: 100px; margin-bottom: 0;">
               <label>Nova Turma</label>
-              <input type="text" id="admin-transfer-turma" placeholder="Ex: A">
+              <input type="text" id="admin-destino-turma" placeholder="Ex: B">
             </div>
           </div>
-          <button class="btn btn-primary" id="btn-transferir-aluno">Realizar Transferência</button>
+
+          <button class="btn btn-primary" id="btn-transferir-aluno" disabled>Realizar Transferência</button>
         </div>
 
         <div class="admin-card" style="max-width: 100%; margin-top: 24px; border: 1px solid var(--danger);">
