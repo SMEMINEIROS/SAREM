@@ -299,6 +299,7 @@ document.getElementById("pesquisa-geral").addEventListener("keydown", e => {
   if (e.key === "Enter") document.getElementById("btn-pesquisa").click();
 });
 
+// === ATUALIZADO: AÇÃO A - RÓTULOS DINÂMICOS NO DASHBOARD ===
 function atualizarDashboard(dados) {
   const comNotaPort = dados.filter(r => r.notaPort != null && r.notaPort !== "");
   const comNotaMat = dados.filter(r => r.notaMat != null && r.notaMat !== "");
@@ -313,7 +314,23 @@ function atualizarDashboard(dados) {
   document.getElementById("card-media-mat").textContent = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   
-  const escolaSelecionada = document.getElementById("filtro-escola").value;
+  // Lógica Dinâmica para Mudar o Nome da Média (Global / Escola / Turma)
+  const filtroTurma = document.getElementById("filtro-turma");
+  const filtroEscola = document.getElementById("filtro-escola");
+  
+  let labelPrefixo = "Média Global";
+  if (filtroTurma && filtroTurma.value) {
+      labelPrefixo = "Média da Turma";
+  } else if (filtroEscola && filtroEscola.value) {
+      labelPrefixo = "Média da Escola";
+  }
+
+  const lblPort = document.getElementById("label-media-port");
+  const lblMat = document.getElementById("label-media-mat");
+  if(lblPort) lblPort.textContent = `${labelPrefixo} (Port)`;
+  if(lblMat) lblMat.textContent = `${labelPrefixo} (Mat)`;
+  
+  const escolaSelecionada = filtroEscola ? filtroEscola.value : "";
   renderizarRankings(dados, escolaSelecionada);
   renderizarPizzas(comNotaGlobal);
   renderizarTabela(dados, true); 
@@ -696,15 +713,32 @@ function carregarAlunosTurma() {
   });
 }
 
+// === ATUALIZADO: AÇÃO B - MÉDIAS DA TURMA EM TEMPO REAL ===
 function atualizarContadoresLancamento() {
   const matriculados = alunosTurmaAtual.length;
   let lancados = 0;
   
+  let somaPort = 0;
+  let countPort = 0;
+  let somaMat = 0;
+  let countMat = 0;
+  
   alunosTurmaAtual.forEach((aluno, i) => {
     const inPort = document.getElementById(`port-${i}`);
     const inMat = document.getElementById(`mat-${i}`);
+    
+    let temNotaInput = false;
+
+    if (inPort && inPort.value !== "") {
+      const p = parseFloat(inPort.value);
+      if (!isNaN(p) && p >= 0 && p <= 10) { somaPort += p; countPort++; temNotaInput = true; }
+    }
+    if (inMat && inMat.value !== "") {
+      const m = parseFloat(inMat.value);
+      if (!isNaN(m) && m >= 0 && m <= 10) { somaMat += m; countMat++; temNotaInput = true; }
+    }
+
     const temNotaSalva = aluno.notaPort != null || aluno.notaMat != null;
-    const temNotaInput = (inPort && inPort.value !== "") || (inMat && inMat.value !== "");
     if(temNotaSalva || temNotaInput) lancados++;
   });
   
@@ -717,6 +751,28 @@ function atualizarContadoresLancamento() {
     document.getElementById('badge-pendentes').classList.replace('badge-vermelho', 'badge-verde');
   } else {
     document.getElementById('badge-pendentes').classList.replace('badge-verde', 'badge-vermelho');
+  }
+
+  // Atualiza as novas Badges de Média da Turma (se existirem na tela)
+  const badgePort = document.getElementById('badge-media-turma-port');
+  const badgeMat = document.getElementById('badge-media-turma-mat');
+
+  if (badgePort && countPort > 0) {
+    const medP = somaPort / countPort;
+    badgePort.innerHTML = `Média Port: <strong>${medP.toFixed(1)}</strong>`;
+    badgePort.className = `badge ${medP >= 7 ? 'badge-verde' : medP >= 5 ? 'badge-amarelo' : 'badge-vermelho'}`;
+  } else if (badgePort) {
+    badgePort.innerHTML = `Média Port: <strong>—</strong>`;
+    badgePort.className = `badge badge-azul`;
+  }
+
+  if (badgeMat && countMat > 0) {
+    const medM = somaMat / countMat;
+    badgeMat.innerHTML = `Média Mat: <strong>${medM.toFixed(1)}</strong>`;
+    badgeMat.className = `badge ${medM >= 7 ? 'badge-verde' : medM >= 5 ? 'badge-amarelo' : 'badge-vermelho'}`;
+  } else if (badgeMat) {
+    badgeMat.innerHTML = `Média Mat: <strong>—</strong>`;
+    badgeMat.className = `badge badge-azul`;
   }
 }
 
@@ -732,6 +788,7 @@ function atualizarMedia(i) {
   } else {
     cell.innerHTML = '<span style="color:#ccc;">—</span>';
   }
+  // A cada tecla digitada, a função abaixo é chamada para atualizar a média global da turma na hora!
   atualizarContadoresLancamento();
 }
 
