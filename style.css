@@ -140,7 +140,13 @@ body {
   color: var(--text);
 }
 
-.form-group input:focus, .form-group select:focus {
+.form-group input:disabled, .form-group select:disabled {
+  background-color: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.form-group input:focus:not(:disabled), .form-group select:focus:not(:disabled) {
   outline: none;
   border-color: var(--primary-light);
   box-shadow: 0 0 0 3px rgba(46, 134, 193, 0.1);
@@ -354,7 +360,7 @@ body {
 }
 
 /* ==========================================
-   GRÁFICOS E TOP 3
+   GRÁFICOS E RANKINGS (Com Scroll)
    ========================================== */
 .graficos-grid {
   display: grid;
@@ -368,6 +374,8 @@ body {
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
 }
 
 .grafico-titulo {
@@ -382,6 +390,29 @@ body {
 .grafico-container {
   position: relative;
   height: 280px;
+}
+
+/* Area rolável para o Ranking Completo */
+.ranking-lista {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Customização da Barra de Rolagem (Scrollbar) */
+.ranking-lista::-webkit-scrollbar {
+  width: 6px;
+}
+.ranking-lista::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+  border-radius: 4px;
+}
+.ranking-lista::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 4px;
+}
+.ranking-lista::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; 
 }
 
 .top3-item {
@@ -402,9 +433,12 @@ body {
 }
 
 .top3-medal {
-  font-size: 24px;
+  font-size: 20px;
   margin-right: 12px;
   min-width: 30px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-light);
 }
 
 .top3-nome {
