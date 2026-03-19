@@ -58,8 +58,8 @@
       <div id="secao-dashboard">
         <div class="cards-grid">
           <div class="card-resumo"><div class="card-resumo-icon">👨‍🎓</div><div><div class="card-resumo-valor" id="card-total">0</div><div class="card-resumo-label">Alunos Avaliados</div></div></div>
-          <div class="card-resumo"><div class="card-resumo-icon">📖</div><div><div class="card-resumo-valor" id="card-media-port">-</div><div class="card-resumo-label">Média Português</div></div></div>
-          <div class="card-resumo"><div class="card-resumo-icon">🔢</div><div><div class="card-resumo-valor" id="card-media-mat">-</div><div class="card-resumo-label">Média Matemática</div></div></div>
+          <div class="card-resumo"><div class="card-resumo-icon">📖</div><div><div class="card-resumo-valor" id="card-media-port">-</div><div class="card-resumo-label" id="label-media-port">Média Global (Port)</div></div></div>
+          <div class="card-resumo"><div class="card-resumo-icon">🔢</div><div><div class="card-resumo-valor" id="card-media-mat">-</div><div class="card-resumo-label" id="label-media-mat">Média Global (Mat)</div></div></div>
           <div class="card-resumo"><div class="card-resumo-icon">🏫</div><div><div class="card-resumo-valor" id="card-escolas">0</div><div class="card-resumo-label">Escolas Participantes</div></div></div>
         </div>
 
@@ -185,12 +185,19 @@
           <div id="lancamento-tabela-wrapper" class="oculto">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
               <div style="font-size:14px;font-weight:700;color:var(--primary);" id="lancamento-turma-titulo"></div>
-              <div id="status-lancamento" style="display:flex; gap:8px;">
-                <span class="badge badge-azul" id="badge-matriculados">Matriculados: 0</span>
-                <span class="badge badge-verde" id="badge-lancados">Lançados: 0</span>
-                <span class="badge badge-vermelho" id="badge-pendentes">Pendentes: 0</span>
+              
+              <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                <div id="status-lancamento" style="display:flex; gap:8px;">
+                  <span class="badge badge-azul" id="badge-matriculados">Matriculados: 0</span>
+                  <span class="badge badge-verde" id="badge-lancados">Lançados: 0</span>
+                  <span class="badge badge-vermelho" id="badge-pendentes">Pendentes: 0</span>
+                </div>
+                <div id="medias-lancamento" style="display:flex; gap:8px;">
+                  <span class="badge badge-azul" id="badge-media-turma-port">Média Port: —</span>
+                  <span class="badge badge-azul" id="badge-media-turma-mat">Média Mat: —</span>
+                </div>
               </div>
-            </div>
+              </div>
 
             <div style="overflow-x:auto;">
               <table>
