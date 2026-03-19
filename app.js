@@ -495,6 +495,7 @@ document.getElementById('btn-pagina-proxima').addEventListener('click', () => {
     renderizarTabela(registrosFiltrados, true); 
   }
 });
+
 // ==========================================
 // GERAR RELATÓRIO PDF
 // ==========================================
@@ -506,7 +507,6 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
   
   showToast("Preparando relatório PDF... Aguarde.", "info");
 
-  // Força a página a ir para o topo absoluto para evitar o "buraco branco"
   window.scrollTo(0, 0);
   
   const btnPdf = document.getElementById('btn-gerar-pdf');
@@ -514,22 +514,18 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
   const cardsFiltro = document.querySelectorAll('.filtros-card'); 
   const dashboard = document.getElementById('secao-dashboard');
 
-  // TRUQUE ANTI-CORTE: Converte os Gráficos de "Grade" (Grid) para "Bloco" (Block)
   const grids = document.querySelectorAll('.graficos-grid');
   const cardsGrafico = document.querySelectorAll('.grafico-card');
   
   grids.forEach(grid => grid.style.display = 'block');
-  cardsGrafico.forEach(card => card.style.marginBottom = '24px'); // Dá um respiro entre um gráfico e outro
+  cardsGrafico.forEach(card => card.style.marginBottom = '24px'); 
 
-  // Esconde elementos que não devem sair na impressão
   btnPdf.classList.add('oculto');
   if (divPaginacao) divPaginacao.classList.add('oculto');
   cardsFiltro.forEach(card => card.classList.add('oculto')); 
   
-  // Renderiza todos os alunos sem paginação
   renderizarTabelaCompletaParaPDF(registrosFiltrados);
 
-  // Configurações do PDF
   const opt = {
     margin:       [10, 10, 10, 10], 
     filename:     'Relatorio_SAREM.pdf',
@@ -539,7 +535,6 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
     pagebreak:    { mode: 'css', avoid: ['.grafico-card', 'tr', '.card-resumo', '.tabela-header'] }
   };
 
-  // Gerar e restaurar
   try {
     await html2pdf().set(opt).from(dashboard).save();
     showToast("PDF gerado e baixado com sucesso!", "success");
@@ -547,11 +542,9 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
     console.error("Erro ao gerar PDF: ", error);
     showToast("Ocorreu um erro ao gerar o documento.", "error");
   } finally {
-    // DESFAZ O TRUQUE: Devolve os gráficos para o formato de "Grade" (Grid)
     grids.forEach(grid => grid.style.display = '');
     cardsGrafico.forEach(card => card.style.marginBottom = '');
 
-    // Retorna os botões e filtros para a tela
     btnPdf.classList.remove('oculto');
     cardsFiltro.forEach(card => card.classList.remove('oculto'));
     renderizarTabela(registrosFiltrados, true);
@@ -1047,4 +1040,4 @@ document.getElementById("btn-limpar-tudo").addEventListener("click", async () =>
   } catch(e) {
     showToast("Erro ao apagar registros.", "error");
   }
-}
+});
