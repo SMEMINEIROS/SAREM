@@ -640,4 +640,14 @@ tbody td {
 @media(max-width: 480px) {
   .cards-grid { grid-template-columns: 1fr; }
   .header-user { display: none; } /* Oculta email em telas muito pequenas */
+   /* ==========================================
+   PROTEÇÃO ANTI-CORTE PARA O PDF (PAGE-BREAK)
+   ========================================== */
+.grafico-card, 
+.card-resumo, 
+tr, 
+.tabela-header, 
+.filtros-card {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
 }
