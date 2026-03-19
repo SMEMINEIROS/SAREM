@@ -495,7 +495,6 @@ document.getElementById('btn-pagina-proxima').addEventListener('click', () => {
     renderizarTabela(registrosFiltrados, true); 
   }
 });
-
 // ==========================================
 // GERAR RELATÓRIO PDF
 // ==========================================
@@ -507,7 +506,7 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
   
   showToast("Preparando relatório PDF... Aguarde.", "info");
 
-  // SOLUÇÃO 1: Força a página a rolar para o topo absoluto antes da "foto"
+  // Força a página a ir para o topo absoluto para evitar o "buraco branco"
   window.scrollTo(0, 0);
   
   const btnPdf = document.getElementById('btn-gerar-pdf');
@@ -515,21 +514,29 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
   const cardsFiltro = document.querySelectorAll('.filtros-card'); 
   const dashboard = document.getElementById('secao-dashboard');
 
-  // Preparar a tela para o PDF (esconde elementos indesejados e tira paginação)
+  // TRUQUE ANTI-CORTE: Converte os Gráficos de "Grade" (Grid) para "Bloco" (Block)
+  const grids = document.querySelectorAll('.graficos-grid');
+  const cardsGrafico = document.querySelectorAll('.grafico-card');
+  
+  grids.forEach(grid => grid.style.display = 'block');
+  cardsGrafico.forEach(card => card.style.marginBottom = '24px'); // Dá um respiro entre um gráfico e outro
+
+  // Esconde elementos que não devem sair na impressão
   btnPdf.classList.add('oculto');
   if (divPaginacao) divPaginacao.classList.add('oculto');
   cardsFiltro.forEach(card => card.classList.add('oculto')); 
   
+  // Renderiza todos os alunos sem paginação
   renderizarTabelaCompletaParaPDF(registrosFiltrados);
 
-  // SOLUÇÃO 2: Configurações com "Anti-Corte" (pagebreak) e "Anti-Buraco Branco" (scrollY)
+  // Configurações do PDF
   const opt = {
     margin:       [10, 10, 10, 10], 
     filename:     'Relatorio_SAREM.pdf',
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, // scrollY: 0 garante que a foto comece do topo exato
+    html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: 'css', avoid: ['.grafico-card', 'tr', '.card-resumo', '.tabela-header'] } // Impede de cortar gráficos e linhas da tabela no meio
+    pagebreak:    { mode: 'css', avoid: ['.grafico-card', 'tr', '.card-resumo', '.tabela-header'] }
   };
 
   // Gerar e restaurar
@@ -540,44 +547,16 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
     console.error("Erro ao gerar PDF: ", error);
     showToast("Ocorreu um erro ao gerar o documento.", "error");
   } finally {
-    // Retorna a tela ao normal
+    // DESFAZ O TRUQUE: Devolve os gráficos para o formato de "Grade" (Grid)
+    grids.forEach(grid => grid.style.display = '');
+    cardsGrafico.forEach(card => card.style.marginBottom = '');
+
+    // Retorna os botões e filtros para a tela
     btnPdf.classList.remove('oculto');
     cardsFiltro.forEach(card => card.classList.remove('oculto'));
     renderizarTabela(registrosFiltrados, true);
   }
 });
-
-function renderizarTabelaCompletaParaPDF(dados) {
-  const tbody = document.getElementById("tabela-corpo");
-  tbody.innerHTML = "";
-  
-  const comNotaGlobal = dados.filter(r => r.notaPort != null || r.notaMat != null);
-  
-  comNotaGlobal.forEach(r => {
-    const pStr = r.notaPort != null ? parseFloat(r.notaPort).toFixed(1) : "—";
-    const mStr = r.notaMat != null ? parseFloat(r.notaMat).toFixed(1) : "—";
-    
-    const media = parseFloat(r.media);
-    let badgeMedia = '<span style="color:#ccc;">—</span>';
-    if (!isNaN(media)) {
-      const bc = media >= 7 ? "badge-verde" : media >= 5 ? "badge-amarelo" : "badge-vermelho";
-      badgeMedia = `<span class="badge ${bc}">${media.toFixed(1)}</span>`;
-    }
-    
-    const anoFormatado = r.ano || "2026";
-    
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td style="color:var(--text-light); font-size:12px;">${anoFormatado}</td>
-                    <td style="font-weight:600">${r.aluno}</td>
-                    <td style="font-size:12px">${r.escola}</td>
-                    <td>${r.serie}</td><td>${r.turma}</td>
-                    <td>${r.periodo === "inicial" ? "Inicial" : "Final"}</td>
-                    <td style="text-align:center">${pStr}</td>
-                    <td style="text-align:center">${mStr}</td>
-                    <td style="text-align:center">${badgeMedia}</td>`;
-    tbody.appendChild(tr);
-  });
-}
 
 function renderizarTabelaCompletaParaPDF(dados) {
   const tbody = document.getElementById("tabela-corpo");
