@@ -1047,4 +1047,4 @@ document.getElementById("btn-limpar-tudo").addEventListener("click", async () =>
   } catch(e) {
     showToast("Erro ao apagar registros.", "error");
   }
-});
+}
