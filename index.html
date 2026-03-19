@@ -33,7 +33,13 @@
 
   <div id="pagina-app" class="oculto">
     <header class="header">
-      <div class="header-logo"><span style="font-size:22px">🏫</span><span class="header-titulo">SAREM</span></div>
+      <div class="header-logo">
+        <div style="background: #ffffff; padding: 4px 8px; border-radius: 6px; display: flex; gap: 10px; align-items: center; margin-right: 8px;">
+          <img src="logo-prefeitura.png" alt="Prefeitura" style="height:32px; width:auto; object-fit:contain" onerror="this.style.display='none'">
+          <img src="logo-secretaria.png" alt="SME" style="height:32px; width:auto; object-fit:contain" onerror="this.style.display='none'">
+        </div>
+        <span class="header-titulo">SAREM</span>
+      </div>
       <div class="header-right">
         <span class="header-user" id="header-usuario"></span>
         <button class="btn btn-sm btn-logout" id="btn-logout">Sair</button>
