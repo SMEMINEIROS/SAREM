@@ -27,7 +27,7 @@ let ESCOLAS_DINAMICAS = [];
 
 // Controle de Paginação
 let paginaAtual = 1;
-const itensPorPagina = 15; // Ajustado para 15 itens por página
+const itensPorPagina = 15;
 
 // ==========================================
 // FUNÇÕES UTILITÁRIAS E UI
@@ -82,7 +82,6 @@ auth.onAuthStateChanged(user => {
     document.getElementById("pagina-app").classList.remove("oculto");
     document.getElementById("header-usuario").textContent = user.email;
     
-    // Controle rigoroso da Aba Admin
     if (user.email === ADMINEMAIL) {
       document.getElementById("btn-admin").classList.remove("oculto");
     } else {
@@ -301,20 +300,23 @@ document.getElementById("pesquisa-geral").addEventListener("keydown", e => {
 });
 
 function atualizarDashboard(dados) {
-  const comNota = dados.filter(r => r.notaPort != null && r.notaMat != null);
-  const total = comNota.length;
-  const mediaPort = total > 0 ? arred(comNota.reduce((s, r) => s + parseFloat(r.notaPort), 0) / total) : "-";
-  const mediaMat  = total > 0 ? arred(comNota.reduce((s, r) => s + parseFloat(r.notaMat), 0) / total) : "-";
-  const escolas = new Set(dados.map(r => r.escola)).size;
+  // CORREÇÃO MATEMÁTICA 1: Separação de matérias para cálculo de médias globais
+  const comNotaPort = dados.filter(r => r.notaPort != null && r.notaPort !== "");
+  const comNotaMat = dados.filter(r => r.notaMat != null && r.notaMat !== "");
+  const comNotaGlobal = dados.filter(r => r.notaPort != null || r.notaMat != null); // Aluno com qualquer nota
   
-  document.getElementById("card-total").textContent = total;
+  const mediaPort = comNotaPort.length > 0 ? arred(comNotaPort.reduce((s, r) => s + parseFloat(r.notaPort), 0) / comNotaPort.length) : "-";
+  const mediaMat  = comNotaMat.length > 0 ? arred(comNotaMat.reduce((s, r) => s + parseFloat(r.notaMat), 0) / comNotaMat.length) : "-";
+  const escolas = new Set(comNotaGlobal.map(r => r.escola)).size;
+  
+  document.getElementById("card-total").textContent = comNotaGlobal.length;
   document.getElementById("card-media-port").textContent = mediaPort;
   document.getElementById("card-media-mat").textContent = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   
   const escolaSelecionada = document.getElementById("filtro-escola").value;
-  renderizarRankings(comNota, escolaSelecionada);
-  renderizarPizzas(comNota);
+  renderizarRankings(dados, escolaSelecionada);
+  renderizarPizzas(comNotaGlobal);
   renderizarTabela(dados, true); 
 }
 
@@ -324,33 +326,39 @@ function atualizarDashboard(dados) {
 function renderizarRankings(dados, escolaFiltro) {
   const grupos = {};
   
-  // Inteligência: Se filtrou escola, agrupa por Turma. Se não, agrupa por Escola.
   const agrupador = escolaFiltro ? (r => r.serie + " " + r.turma) : (r => r.escola);
   const tituloSufixo = escolaFiltro ? "Turmas" : "Escolas";
   
   document.getElementById("titulo-ranking-port").textContent = `🏆 Ranking de ${tituloSufixo} — Português`;
   document.getElementById("titulo-ranking-mat").textContent = `🏆 Ranking de ${tituloSufixo} — Matemática`;
 
+  // CORREÇÃO MATEMÁTICA 1: Push de notas independentes para não excluir o aluno inteiro
   dados.forEach(r => {
     const chave = agrupador(r);
     if (!chave || chave.trim() === "") return;
     if (!grupos[chave]) grupos[chave] = { port: [], mat: [] };
-    grupos[chave].port.push(parseFloat(r.notaPort));
-    grupos[chave].mat.push(parseFloat(r.notaMat));
+    
+    if (r.notaPort != null && r.notaPort !== "") grupos[chave].port.push(parseFloat(r.notaPort));
+    if (r.notaMat != null && r.notaMat !== "") grupos[chave].mat.push(parseFloat(r.notaMat));
   });
   
   const lista = Object.keys(grupos).map(k => {
     const gp = grupos[k].port, gm = grupos[k].mat;
     return { 
       nome: k, 
-      mp: gp.reduce((a, b) => a + b, 0) / gp.length, 
-      mm: gm.reduce((a, b) => a + b, 0) / gm.length 
+      mp: gp.length > 0 ? gp.reduce((a, b) => a + b, 0) / gp.length : -1, // -1 significa sem nota válida
+      mm: gm.length > 0 ? gm.reduce((a, b) => a + b, 0) / gm.length : -1 
     };
   });
   
   function renderEl(elId, campo) {
-    // Remove o .slice(0,3) para renderizar a lista inteira
-    const sorted = lista.slice().sort((a, b) => b[campo] - a[campo]);
+    // CORREÇÃO MATEMÁTICA 3: Desempate por ordem alfabética
+    const validos = lista.filter(e => e[campo] !== -1);
+    const sorted = validos.sort((a, b) => {
+       if (b[campo] !== a[campo]) return b[campo] - a[campo];
+       return a.nome.localeCompare(b.nome);
+    });
+
     const el = document.getElementById(elId);
     if (!el) return;
     el.innerHTML = "";
@@ -405,8 +413,8 @@ function renderizarPizzas(dados) {
     });
   }
   
-  pizza("grafico-dist-port", dados.map(r => parseFloat(r.notaPort)));
-  pizza("grafico-dist-mat", dados.map(r => parseFloat(r.notaMat)));
+  pizza("grafico-dist-port", dados.map(r => parseFloat(r.notaPort)).filter(n => !isNaN(n)));
+  pizza("grafico-dist-mat", dados.map(r => parseFloat(r.notaMat)).filter(n => !isNaN(n)));
 }
 
 // ==========================================
@@ -423,10 +431,11 @@ function renderizarTabela(dados, mostrar) {
   if (!mostrar) { if (card) card.classList.add("oculto"); return; }
   if (card) card.classList.remove("oculto");
   
-  const comNota = dados.filter(r => r.notaPort != null);
-  if (count) count.textContent = comNota.length + " aluno(s)";
+  // Inclui quem tem pelo menos uma nota na tabela de resultados
+  const comNotaGlobal = dados.filter(r => r.notaPort != null || r.notaMat != null);
+  if (count) count.textContent = comNotaGlobal.length + " aluno(s)";
   
-  if (comNota.length === 0) { 
+  if (comNotaGlobal.length === 0) { 
     vazio.classList.remove("oculto"); 
     divPaginacao.classList.add("oculto");
     document.getElementById("tabela-dados").classList.add("oculto");
@@ -437,7 +446,7 @@ function renderizarTabela(dados, mostrar) {
   document.getElementById("tabela-dados").classList.remove("oculto");
   divPaginacao.classList.remove("oculto");
 
-  const totalPaginas = Math.ceil(comNota.length / itensPorPagina) || 1;
+  const totalPaginas = Math.ceil(comNotaGlobal.length / itensPorPagina) || 1;
   if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
   
   document.getElementById("texto-paginacao").textContent = `Página ${paginaAtual} de ${totalPaginas}`;
@@ -447,11 +456,20 @@ function renderizarTabela(dados, mostrar) {
   
   const inicio = (paginaAtual - 1) * itensPorPagina;
   const fim = inicio + itensPorPagina;
-  const fatia = comNota.slice(inicio, fim);
+  const fatia = comNotaGlobal.slice(inicio, fim);
   
   fatia.forEach(r => {
+    const pStr = r.notaPort != null ? parseFloat(r.notaPort).toFixed(1) : "—";
+    const mStr = r.notaMat != null ? parseFloat(r.notaMat).toFixed(1) : "—";
+    
+    // Tratamento de segurança para Média
     const media = parseFloat(r.media);
-    const bc = media >= 7 ? "badge-verde" : media >= 5 ? "badge-amarelo" : "badge-vermelho";
+    let badgeMedia = '<span style="color:#ccc;">—</span>';
+    if (!isNaN(media)) {
+      const bc = media >= 7 ? "badge-verde" : media >= 5 ? "badge-amarelo" : "badge-vermelho";
+      badgeMedia = `<span class="badge ${bc}">${media.toFixed(1)}</span>`;
+    }
+    
     const anoFormatado = r.ano || "2026";
     
     const tr = document.createElement("tr");
@@ -460,9 +478,9 @@ function renderizarTabela(dados, mostrar) {
                     <td style="font-size:12px">${r.escola}</td>
                     <td>${r.serie}</td><td>${r.turma}</td>
                     <td>${r.periodo === "inicial" ? "Inicial" : "Final"}</td>
-                    <td style="text-align:center">${parseFloat(r.notaPort).toFixed(1)}</td>
-                    <td style="text-align:center">${parseFloat(r.notaMat).toFixed(1)}</td>
-                    <td style="text-align:center"><span class="badge ${bc}">${media.toFixed(1)}</span></td>`;
+                    <td style="text-align:center">${pStr}</td>
+                    <td style="text-align:center">${mStr}</td>
+                    <td style="text-align:center">${badgeMedia}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -475,8 +493,8 @@ document.getElementById('btn-pagina-anterior').addEventListener('click', () => {
 });
 
 document.getElementById('btn-pagina-proxima').addEventListener('click', () => {
-  const comNota = registrosFiltrados.filter(r => r.notaPort != null);
-  const totalPaginas = Math.ceil(comNota.length / itensPorPagina);
+  const comNotaGlobal = registrosFiltrados.filter(r => r.notaPort != null || r.notaMat != null);
+  const totalPaginas = Math.ceil(comNotaGlobal.length / itensPorPagina);
   if (paginaAtual < totalPaginas) { 
     paginaAtual++; 
     renderizarTabela(registrosFiltrados, true); 
@@ -494,7 +512,7 @@ document.getElementById('btn-exportar-excel').addEventListener('click', () => {
   showToast("Gerando planilha...", "info");
   
   const dadosExportacao = registrosFiltrados
-    .filter(r => r.notaPort != null)
+    .filter(r => r.notaPort != null || r.notaMat != null)
     .map(r => ({
       "Ano": r.ano || "2026",
       "Escola": r.escola,
@@ -503,9 +521,9 @@ document.getElementById('btn-exportar-excel').addEventListener('click', () => {
       "Aluno": r.aluno,
       "Período": r.periodo === "inicial" ? "Diagnóstico Inicial" : "Diagnóstico Final",
       "Avaliadora": r.avaliadora,
-      "Português": parseFloat(r.notaPort),
-      "Matemática": parseFloat(r.notaMat),
-      "Média Final": parseFloat(r.media)
+      "Português": r.notaPort != null ? parseFloat(r.notaPort) : "-",
+      "Matemática": r.notaMat != null ? parseFloat(r.notaMat) : "-",
+      "Média Final": r.media != null ? parseFloat(r.media) : "-"
     }));
 
   const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
@@ -657,6 +675,7 @@ function atualizarMedia(i) {
   const m = parseFloat(document.getElementById(`mat-${i}`).value);
   const cell = document.getElementById(`media-${i}`);
   
+  // CORREÇÃO MATEMÁTICA 2: Arredondamento padronizado na tela
   if (!isNaN(p) && !isNaN(m)) {
     const med = Math.round((p + m) / 2 * 10) / 10;
     const bc = med >= 7 ? "badge-verde" : med >= 5 ? "badge-amarelo" : "badge-vermelho";
@@ -707,7 +726,11 @@ async function salvarTurmaBatch() {
 
     if (!isNaN(p)) dados.notaPort = p;
     if (!isNaN(m)) dados.notaMat = m;
-    if (!isNaN(p) && !isNaN(m)) dados.media = (Math.round((p + m) / 2 * 100) / 100).toFixed(1);
+    
+    // CORREÇÃO MATEMÁTICA 2: Garantir persistência de arredondamento correto no banco
+    if (!isNaN(p) && !isNaN(m)) {
+      dados.media = (Math.round((p + m) / 2 * 10) / 10).toFixed(1);
+    }
 
     const docRef = aluno.registroId 
       ? db.collection("registros").doc(aluno.registroId) 
@@ -776,8 +799,9 @@ document.getElementById("btn-gerar-comparativo").addEventListener("click", () =>
   const series = ["1º Ano", "2º Ano", "3º Ano", "4º Ano", "5º Ano"];
   
   function med(arr, s, c) {
-    const it = arr.filter(r => r.serie === s);
-    return it.length ? (it.reduce((a, r) => a + r[c], 0) / it.length).toFixed(1) : 0;
+    const it = arr.filter(r => r.serie === s && r[c] != null);
+    // CORREÇÃO MATEMÁTICA 4: Divisão estrita e proteção contra divisão por zero do Gráfico
+    return it.length > 0 ? parseFloat((it.reduce((a, r) => a + parseFloat(r[c]), 0) / it.length).toFixed(1)) : 0;
   }
   
   ["Port", "Mat"].forEach(d => {
