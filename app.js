@@ -27,7 +27,7 @@ let ESCOLAS_DINAMICAS = [];
 
 // Controle de Paginação
 let paginaAtual = 1;
-const itensPorPagina = 15;
+const itensPorPagina = 15; // Ajustado para 15 itens por página
 
 // ==========================================
 // FUNÇÕES UTILITÁRIAS E UI
@@ -82,20 +82,17 @@ auth.onAuthStateChanged(user => {
     document.getElementById("pagina-app").classList.remove("oculto");
     document.getElementById("header-usuario").textContent = user.email;
     
-    // CORREÇÃO: Controle rigoroso da Aba Admin
+    // Controle rigoroso da Aba Admin
     if (user.email === ADMINEMAIL) {
       document.getElementById("btn-admin").classList.remove("oculto");
     } else {
-      // Força ocultar se não for admin
       document.getElementById("btn-admin").classList.add("oculto");
-      // Se a pessoa estiver na aba admin sem querer, joga pro dashboard
       document.getElementById("secao-admin").classList.add("oculto");
       document.getElementById("secao-dashboard").classList.remove("oculto");
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("ativo"));
       document.querySelector('[data-secao="dashboard"]').classList.add("ativo");
     }
     
-    // Inicia os carregamentos dinâmicos
     carregarEscolas();
     carregarUsuariosAdmin();
     carregarRegistros();
@@ -315,42 +312,76 @@ function atualizarDashboard(dados) {
   document.getElementById("card-media-mat").textContent = mediaMat;
   document.getElementById("card-escolas").textContent = escolas;
   
-  renderizarTop3(comNota);
+  const escolaSelecionada = document.getElementById("filtro-escola").value;
+  renderizarRankings(comNota, escolaSelecionada);
   renderizarPizzas(comNota);
   renderizarTabela(dados, true); 
 }
 
-function renderizarTop3(dados) {
+// ==========================================
+// RANKINGS INTELIGENTES (Escolas ou Turmas)
+// ==========================================
+function renderizarRankings(dados, escolaFiltro) {
   const grupos = {};
+  
+  // Inteligência: Se filtrou escola, agrupa por Turma. Se não, agrupa por Escola.
+  const agrupador = escolaFiltro ? (r => r.serie + " " + r.turma) : (r => r.escola);
+  const tituloSufixo = escolaFiltro ? "Turmas" : "Escolas";
+  
+  document.getElementById("titulo-ranking-port").textContent = `🏆 Ranking de ${tituloSufixo} — Português`;
+  document.getElementById("titulo-ranking-mat").textContent = `🏆 Ranking de ${tituloSufixo} — Matemática`;
+
   dados.forEach(r => {
-    if (!grupos[r.escola]) grupos[r.escola] = { port: [], mat: [] };
-    grupos[r.escola].port.push(parseFloat(r.notaPort));
-    grupos[r.escola].mat.push(parseFloat(r.notaMat));
+    const chave = agrupador(r);
+    if (!chave || chave.trim() === "") return;
+    if (!grupos[chave]) grupos[chave] = { port: [], mat: [] };
+    grupos[chave].port.push(parseFloat(r.notaPort));
+    grupos[chave].mat.push(parseFloat(r.notaMat));
   });
   
-  const lista = Object.keys(grupos).map(e => {
-    const gp = grupos[e].port, gm = grupos[e].mat;
-    return { escola: e, mp: gp.reduce((a, b) => a + b, 0) / gp.length, mm: gm.reduce((a, b) => a + b, 0) / gm.length };
+  const lista = Object.keys(grupos).map(k => {
+    const gp = grupos[k].port, gm = grupos[k].mat;
+    return { 
+      nome: k, 
+      mp: gp.reduce((a, b) => a + b, 0) / gp.length, 
+      mm: gm.reduce((a, b) => a + b, 0) / gm.length 
+    };
   });
   
   function renderEl(elId, campo) {
-    const sorted = lista.slice().sort((a, b) => b[campo] - a[campo]).slice(0, 3);
+    // Remove o .slice(0,3) para renderizar a lista inteira
+    const sorted = lista.slice().sort((a, b) => b[campo] - a[campo]);
     const el = document.getElementById(elId);
     if (!el) return;
     el.innerHTML = "";
-    if (!sorted.length) { el.innerHTML = "<div style='text-align:center;color:var(--text-light);padding:20px'>Sem dados</div>"; return; }
-    const medals = ["🥇", "🥈", "🥉"];
+    
+    if (!sorted.length) { 
+      el.innerHTML = "<div style='text-align:center;color:var(--text-light);padding:20px'>Sem dados suficientes</div>"; 
+      return; 
+    }
+    
     sorted.forEach((e, i) => {
       const val = arred(e[campo]);
       const bc = parseFloat(val) >= 7 ? "badge-verde" : parseFloat(val) >= 5 ? "badge-amarelo" : "badge-vermelho";
+      
+      let posicaoHtml = "";
+      if (i === 0) posicaoHtml = "🥇";
+      else if (i === 1) posicaoHtml = "🥈";
+      else if (i === 2) posicaoHtml = "🥉";
+      else posicaoHtml = `<span style="font-size:15px; font-weight:700; color:var(--text-light);">${i + 1}º</span>`;
+
       const div = document.createElement("div");
       div.className = "top3-item";
-      div.innerHTML = `<span class="top3-medal">${medals[i]}</span><span class="top3-nome">${e.escola}</span><span class="top3-nota"><span class="badge ${bc}">${val}</span></span>`;
+      div.innerHTML = `
+        <span class="top3-medal" style="width: 35px; display: inline-block;">${posicaoHtml}</span>
+        <span class="top3-nome">${e.nome}</span>
+        <span class="top3-nota"><span class="badge ${bc}">${val}</span></span>`;
       el.appendChild(div);
     });
   }
-  renderEl("top3-port", "mp");
-  renderEl("top3-mat", "mm");
+  
+  renderEl("ranking-port", "mp");
+  renderEl("ranking-mat", "mm");
 }
 
 function renderizarPizzas(dados) {
