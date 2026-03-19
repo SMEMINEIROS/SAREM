@@ -506,29 +506,33 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
   }
   
   showToast("Preparando relatório PDF... Aguarde.", "info");
+
+  // SOLUÇÃO 1: Força a página a rolar para o topo absoluto antes da "foto"
+  window.scrollTo(0, 0);
   
   const btnPdf = document.getElementById('btn-gerar-pdf');
   const divPaginacao = document.getElementById('paginacao-resultados');
   const cardsFiltro = document.querySelectorAll('.filtros-card'); 
   const dashboard = document.getElementById('secao-dashboard');
 
-  // 1. Preparar a tela para o PDF (esconde elementos indesejados e tira paginação)
+  // Preparar a tela para o PDF (esconde elementos indesejados e tira paginação)
   btnPdf.classList.add('oculto');
   if (divPaginacao) divPaginacao.classList.add('oculto');
   cardsFiltro.forEach(card => card.classList.add('oculto')); 
   
   renderizarTabelaCompletaParaPDF(registrosFiltrados);
 
-  // 2. Configurações do html2pdf
+  // SOLUÇÃO 2: Configurações com "Anti-Corte" (pagebreak) e "Anti-Buraco Branco" (scrollY)
   const opt = {
     margin:       [10, 10, 10, 10], 
     filename:     'Relatorio_SAREM.pdf',
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true }, 
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, // scrollY: 0 garante que a foto comece do topo exato
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: 'css', avoid: ['.grafico-card', 'tr', '.card-resumo', '.tabela-header'] } // Impede de cortar gráficos e linhas da tabela no meio
   };
 
-  // 3. Gerar e restaurar
+  // Gerar e restaurar
   try {
     await html2pdf().set(opt).from(dashboard).save();
     showToast("PDF gerado e baixado com sucesso!", "success");
@@ -542,6 +546,38 @@ document.getElementById('btn-gerar-pdf').addEventListener('click', async () => {
     renderizarTabela(registrosFiltrados, true);
   }
 });
+
+function renderizarTabelaCompletaParaPDF(dados) {
+  const tbody = document.getElementById("tabela-corpo");
+  tbody.innerHTML = "";
+  
+  const comNotaGlobal = dados.filter(r => r.notaPort != null || r.notaMat != null);
+  
+  comNotaGlobal.forEach(r => {
+    const pStr = r.notaPort != null ? parseFloat(r.notaPort).toFixed(1) : "—";
+    const mStr = r.notaMat != null ? parseFloat(r.notaMat).toFixed(1) : "—";
+    
+    const media = parseFloat(r.media);
+    let badgeMedia = '<span style="color:#ccc;">—</span>';
+    if (!isNaN(media)) {
+      const bc = media >= 7 ? "badge-verde" : media >= 5 ? "badge-amarelo" : "badge-vermelho";
+      badgeMedia = `<span class="badge ${bc}">${media.toFixed(1)}</span>`;
+    }
+    
+    const anoFormatado = r.ano || "2026";
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td style="color:var(--text-light); font-size:12px;">${anoFormatado}</td>
+                    <td style="font-weight:600">${r.aluno}</td>
+                    <td style="font-size:12px">${r.escola}</td>
+                    <td>${r.serie}</td><td>${r.turma}</td>
+                    <td>${r.periodo === "inicial" ? "Inicial" : "Final"}</td>
+                    <td style="text-align:center">${pStr}</td>
+                    <td style="text-align:center">${mStr}</td>
+                    <td style="text-align:center">${badgeMedia}</td>`;
+    tbody.appendChild(tr);
+  });
+}
 
 function renderizarTabelaCompletaParaPDF(dados) {
   const tbody = document.getElementById("tabela-corpo");
